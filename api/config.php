@@ -15,10 +15,14 @@ if (!defined('SIGMAFORO_API')) {
 // CONFIGURACIÓN DE BASE DE DATOS
 // ========================================
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'sigmaforo');
-define('DB_USER', 'root');
-define('DB_PASS', ''); 
+// Intentar obtener las variables de entorno (Railway)
+// Railway usa variables diferentes, las leemos aquí:
+define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
+define('DB_NAME', getenv('MYSQLDATABASE') ?: 'sigmaforo');
+define('DB_USER', getenv('MYSQLUSER') ?: 'root');
+define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
+define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
+
 define('DB_CHARSET', 'utf8mb4');
 
 // ========================================
@@ -42,29 +46,35 @@ $allowed_origins = [
     'http://localhost',
     'http://localhost:3000',
     'http://localhost:8080',
-    'http://127.0.0.1'
+    'http://127.0.0.1',
 ];
 
 // ========================================
 // CLASE DE CONEXIÓN A BASE DE DATOS
 // ========================================
 
+// ========================================
+// CLASE DE CONEXIÓN A LA BASE DE DATOS
+// ========================================
+
 class Database {
     private static $instance = null;
     private $conn;
-    
+
     private function __construct() {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_CHARSET
             ];
-            
+
             $this->conn = new PDO($dsn, DB_USER, DB_PASS, $options);
-        } catch(PDOException $e) {
+
+        } catch (PDOException $e) {
             error_log("Error de conexión: " . $e->getMessage());
             http_response_code(500);
             die(json_encode([
@@ -73,24 +83,17 @@ class Database {
             ]));
         }
     }
-    
+
+    // Patrón Singleton: asegura una sola instancia
     public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new Database();
         }
         return self::$instance;
     }
-    
+
     public function getConnection() {
         return $this->conn;
-    }
-    
-    // Prevenir clonación
-    private function __clone() {}
-    
-    // Prevenir deserialización
-    public function __wakeup() {
-        throw new Exception("Cannot unserialize singleton");
     }
 }
 

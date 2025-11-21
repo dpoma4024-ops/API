@@ -1,4 +1,8 @@
 <?php
-// Redirige a la carpeta api sólo si se accede a la raíz
-header("Location: api/");
-exit;
+header("Content-Type: application/json");
+
+// Simple prueba
+echo json_encode([
+    "status" => "online",
+    "message" => "API funcionando en Railway 🚀"
+]);
