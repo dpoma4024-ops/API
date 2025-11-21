@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa - SigmaForo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-left">
+                <a href="dashboard.html" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>SigmaForo</span>
+                </a>
+            </div>
+
+            <div class="nav-center">
+                <a href="dashboard.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    Inicio
+                </a>
+                <a href="alertas.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    Alertas
+                </a>
+                <a href="mapa.html" class="nav-link active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Mapa
+                </a>
+            </div>
+
+            <div class="nav-right">
+                <button class="btn btn-primary" onclick="openCreateReportModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Reportar
+                </button>
+                <div class="notification-wrapper">
+                    <button class="notification-btn" onclick="toggleNotifications()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h3>Notificaciones</h3>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+                        </div>
+                        <div id="notificationList" class="notification-list"></div>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-btn" onclick="toggleUserMenu()">
+                        <div class="avatar">
+                            <span id="userInitial">U</span>
+                        </div>
+                        <span id="userName">Usuario</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu">
+                        <a href="perfil.html" class="dropdown-item" id="menuPerfil">Mi Perfil</a>
+                        <a href="mis-reportes.html" class="dropdown-item" id="menuReportes">Mis Reportes</a>
+                        <a href="configuracion.html" class="dropdown-item" id="menuConfig">Configuración</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <main class="feed">
+                <div class="page-header">
+                    <h1>Mapa de Incidentes</h1>
+                    <p class="page-description">Vista de mapa interactivo con todos los reportes ciudadanos</p>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="map-filters-card">
+                    <div class="filter-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <span>Filtrar por categoría</span>
+                    </div>
+                    <div class="map-filters">
+                        <button class="filter-btn active" data-category="all" onclick="filterMapCategory('all')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                            </svg>
+                            Todos
+                        </button>
+                        <button class="filter-btn" data-category="seguridad" onclick="filterMapCategory('seguridad')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            Seguridad
+                        </button>
+                        <button class="filter-btn" data-category="infraestructura" onclick="filterMapCategory('infraestructura')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            Infraestructura
+                        </button>
+                        <button class="filter-btn" data-category="vias" onclick="filterMapCategory('vias')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            Vías
+                        </button>
+                        <button class="filter-btn" data-category="servicios" onclick="filterMapCategory('servicios')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                            </svg>
+                            Servicios
+                        </button>
+                        <button class="filter-btn" data-category="medio_ambiente" onclick="filterMapCategory('medio_ambiente')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22v-8m0 0c-4-2-6-4-6-8 0-4 2-6 6-6s6 2 6 6c0 4-2 6-6 8Z"></path>
+                            </svg>
+                            Medio Ambiente
+                        </button>
+                    </div>
+                    <p class="filter-count">Mostrando <span id="mapFilterCount">0</span> incidentes</p>
+                </div>
+
+                <!-- Map -->
+                <div class="map-card">
+                    <div id="mapContainer" style="height: 600px;"></div>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend-card">
+                    <h3>Leyenda</h3>
+                    <div class="legend-grid">
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background-color: #dc2626;"></div>
+                            <span>Seguridad</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background-color: #ea580c;"></div>
+                            <span>Infraestructura</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background-color: #ca8a04;"></div>
+                            <span>Vías</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background-color: #2563eb;"></div>
+                            <span>Servicios</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-marker" style="background-color: #16a34a;"></div>
+                            <span>Medio Ambiente</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="map-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMapReports">0</div>
+                        <div class="stat-label">Total Reportes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number stat-red" id="securityReports">0</div>
+                        <div class="stat-label">Seguridad</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number stat-orange" id="infraReports">0</div>
+                        <div class="stat-label">Infraestructura</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number stat-yellow" id="viasReports">0</div>
+                        <div class="stat-label">Vías</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="trending-card">
+                    <h3>Tendencias</h3>
+                    <div id="trendingList"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if (!isAuthenticated()) {
+            window.location.href = 'index.html';
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            initMap();
+            loadTrending();
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>

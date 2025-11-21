@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reportes - SigmaForo Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Navbar Admin -->
+    <nav class="navbar admin-navbar">
+        <div class="nav-content">
+            <div class="nav-left">
+                <a href="admin-dashboard.html" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <span>SigmaForo Admin</span>
+                </a>
+            </div>
+
+            <div class="nav-center">
+                <a href="admin-dashboard.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="admin-reports.html" class="nav-link active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Reportes
+                </a>
+                <a href="admin-users.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Usuarios
+                </a>
+                <a href="admin-stats.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Estadísticas
+                </a>
+            </div>
+
+            <div class="nav-right">
+                <div class="notification-wrapper">
+                    <button class="notification-btn" onclick="toggleNotifications()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">0</span>
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h3>Notificaciones</h3>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+                        </div>
+                        <div id="notificationList" class="notification-list"></div>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-btn" onclick="toggleUserMenu()">
+                        <div class="avatar admin-avatar">
+                            <span id="userInitial">A</span>
+                        </div>
+                        <span id="userName">Administrador</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu">
+                        <a href="admin-settings.html" class="dropdown-item">Configuración</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="admin-reports-layout">
+            <div class="page-header">
+                <div>
+                    <h1>Gestión de Reportes</h1>
+                    <p class="page-description">Administra y modera todos los reportes de la plataforma</p>
+                </div>
+                <div class="header-stats">
+                    <div class="mini-stat">
+                        <span class="mini-stat-value" id="totalReportsCount">0</span>
+                        <span class="mini-stat-label">Total</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-value" id="pendingReportsCount">0</span>
+                        <span class="mini-stat-label">Pendientes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="admin-filters-card">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <div class="search-input-wrapper">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" id="adminSearchInput" placeholder="Buscar por título, descripción o autor..." onkeyup="filterAdminReports()">
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Estado</label>
+                        <select id="adminStatusFilter" onchange="filterAdminReports()">
+                            <option value="all">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_revision">En Revisión</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="resuelto">Resuelto</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Categoría</label>
+                        <select id="adminCategoryFilter" onchange="filterAdminReports()">
+                            <option value="all">Todas</option>
+                            <option value="seguridad">Seguridad</option>
+                            <option value="infraestructura">Infraestructura</option>
+                            <option value="vias">Vías</option>
+                            <option value="servicios">Servicios</option>
+                            <option value="medio_ambiente">Medio Ambiente</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Ordenar por</label>
+                        <select id="adminSortFilter" onchange="filterAdminReports()">
+                            <option value="recent">Más recientes</option>
+                            <option value="oldest">Más antiguos</option>
+                            <option value="likes">Más likes</option>
+                            <option value="views">Más vistos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bulk-actions">
+                    <button class="btn btn-sm btn-outline" onclick="selectAllReports()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Seleccionar todo
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="bulkApproveReports()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Aprobar seleccionados
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="bulkDeleteReports()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Eliminar seleccionados
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reports Table -->
+            <div class="admin-table-card">
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Reporte</th>
+                                <th>Autor</th>
+                                <th>Categoría</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Engagement</th>
+                                <th width="120">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminReportsTableBody">
+                            <!-- Se cargará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-pagination">
+                    <div class="pagination-info">
+                        Mostrando <span id="showingCount">0</span> de <span id="totalCount">0</span> reportes
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm btn-outline" onclick="previousPage()" id="prevBtn">Anterior</button>
+                        <span class="pagination-pages" id="paginationPages"></span>
+                        <button class="btn btn-sm btn-outline" onclick="nextPage()" id="nextBtn">Siguiente</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Detail Modal -->
+    <div id="reportDetailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Detalle del Reporte</h2>
+                <button class="close-btn" onclick="closeReportDetailModal()">&times;</button>
+            </div>
+            <div id="reportDetailContent">
+                <!-- Se cargará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="app.js"></script>
+    <script src="admin-functions.js"></script>
+    <script>
+        if (!isAuthenticated() || !isAdmin()) {
+            showToast('Acceso denegado: Se requieren permisos de administrador', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            loadAdminReports();
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>

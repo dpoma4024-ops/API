@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - SigmaForo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-left">
+                <a href="dashboard.html" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>SigmaForo</span>
+                </a>
+            </div>
+
+            <div class="nav-center">
+                <a href="dashboard.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    Inicio
+                </a>
+                <a href="alertas.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    Alertas
+                </a>
+                <a href="mapa.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Mapa
+                </a>
+            </div>
+
+            <div class="nav-right">
+                <button class="btn btn-primary" onclick="openCreateReportModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Reportar
+                </button>
+                <div class="notification-wrapper">
+                    <button class="notification-btn" onclick="toggleNotifications()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h3>Notificaciones</h3>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+                        </div>
+                        <div id="notificationList" class="notification-list"></div>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-btn" onclick="toggleUserMenu()">
+                        <div class="avatar">
+                            <span id="userInitial">U</span>
+                        </div>
+                        <span id="userName">Usuario</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu">
+                        <a href="perfil.html" class="dropdown-item">Mi Perfil</a>
+                        <a href="mis-reportes.html" class="dropdown-item">Mis Reportes</a>
+                        <a href="configuracion.html" class="dropdown-item">Configuración</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="profile-container">
+            <div class="profile-header-card">
+                <div class="profile-cover"></div>
+                <div class="profile-info">
+                    <div class="profile-avatar-large">
+                        <span id="profileInitial">U</span>
+                    </div>
+                    <div class="profile-details">
+                        <h1 id="profileName">Usuario</h1>
+                        <p id="profileEmail" class="profile-email">usuario@ejemplo.com</p>
+                        <p id="profileType" class="profile-type">Usuario Registrado</p>
+                    </div>
+                    <button class="btn btn-outline" onclick="enableEditProfile()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Editar Perfil
+                    </button>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <!-- Profile Stats -->
+                <div class="profile-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="userReportsCount">0</div>
+                            <div class="stat-label">Reportes Creados</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="userLikesReceived">0</div>
+                            <div class="stat-label">Likes Recibidos</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="userViews">0</div>
+                            <div class="stat-label">Visualizaciones</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Form -->
+                <div class="profile-form-card">
+                    <h2>Información Personal</h2>
+                    <form id="profileForm" onsubmit="saveProfile(event)">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="editName" name="name" required disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico</label>
+                            <input type="email" id="editEmail" name="email" required disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre de Usuario</label>
+                            <input type="text" id="editUsername" name="username" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Ubicación</label>
+                            <input type="text" id="editLocation" name="location" placeholder="Tacna, Perú" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Biografía</label>
+                            <textarea id="editBio" name="bio" rows="3" placeholder="Cuéntanos sobre ti..." disabled></textarea>
+                        </div>
+                        <div id="profileFormActions" class="form-actions" style="display: none;">
+                            <button type="button" class="btn btn-outline" onclick="cancelEditProfile()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Activity Timeline -->
+                <div class="profile-activity-card">
+                    <h2>Actividad Reciente</h2>
+                    <div id="userActivity" class="activity-timeline">
+                        <!-- Se cargará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="app.js"></script>
+    <script>
+        if (!isAuthenticated()) {
+            window.location.href = 'index.html';
+        }
+        
+        const user = getCurrentUser();
+        if (user && user.type === 'anonimo') {
+            showToast('Los usuarios anónimos no tienen perfil personalizable', 'warning');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 2000);
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            loadProfileData();
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>
