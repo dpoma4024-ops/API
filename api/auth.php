@@ -1,8 +1,7 @@
 <?php
 /**
  * SigmaForo - API de Autenticación
- * 
- * Endpoints para registro, login y gestión de usuarios
+ * * Endpoints para registro, login y gestión de usuarios
  */
 
 define('SIGMAFORO_API', true);
@@ -12,14 +11,24 @@ setCorsHeaders();
 
 $db = Database::getInstance()->getConnection();
 $method = $_SERVER['REQUEST_METHOD'];
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+
+// =================================================================
+// 1. CAPTURA DE DATOS INTELIGENTE (JSON + URL)
+// =================================================================
+
+// Leemos el cuerpo JSON una sola vez al principio
+$inputJSON = file_get_contents('php://input');
+$data = json_decode($inputJSON, true) ?? []; // Si no hay JSON, array vacío
+
+// Buscamos la 'action' en la URL ($_GET) O dentro del JSON ($data)
+$action = $_GET['action'] ?? ($data['action'] ?? '');
 
 // ========================================
 // REGISTRO DE USUARIO
 // ========================================
 
 if ($action === 'register' && $method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Ya tenemos $data leído arriba, no necesitamos leerlo de nuevo
     
     // Validar campos requeridos
     validateRequired($data, ['name', 'email', 'password']);
@@ -27,15 +36,15 @@ if ($action === 'register' && $method === 'POST') {
     $name = sanitizeString($data['name']);
     $email = sanitizeString($data['email']);
     $password = $data['password'];
-    $confirmPassword = isset($data['confirmPassword']) ? $data['confirmPassword'] : '';
+    $confirmPassword = isset($data['confirmPassword']) ? $data['confirmPassword'] : ''; // Opcional
     
     // Validar email
     if (!validateEmail($email)) {
         sendError('Email no válido');
     }
     
-    // Validar contraseñas coincidan
-    if ($password !== $confirmPassword) {
+    // (Opcional) Validar contraseñas coincidan si envían confirmación
+    if (!empty($confirmPassword) && $password !== $confirmPassword) {
         sendError('Las contraseñas no coinciden');
     }
     
@@ -68,9 +77,13 @@ if ($action === 'register' && $method === 'POST') {
         
         $userId = $db->lastInsertId();
         
-        // Crear configuración por defecto
-        $stmt = $db->prepare("INSERT INTO configuracion_usuario (user_id) VALUES (?)");
-        $stmt->execute([$userId]);
+        // Crear configuración por defecto (si la tabla existe)
+        try {
+            $stmt = $db->prepare("INSERT INTO configuracion_usuario (user_id) VALUES (?)");
+            $stmt->execute([$userId]);
+        } catch (PDOException $e) {
+            // Ignoramos error si no existe tabla config, para no bloquear registro
+        }
         
         // Generar token
         $token = generateToken($userId, 'registrado');
@@ -88,7 +101,7 @@ if ($action === 'register' && $method === 'POST') {
         
     } catch (PDOException $e) {
         logError('Error en registro: ' . $e->getMessage());
-        sendError('Error al registrar usuario', 500);
+        sendError('Error al registrar usuario: ' . $e->getMessage(), 500);
     }
 }
 
@@ -97,7 +110,7 @@ if ($action === 'register' && $method === 'POST') {
 // ========================================
 
 if ($action === 'login' && $method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Usamos $data que leímos arriba
     
     validateRequired($data, ['email', 'password']);
     
@@ -157,8 +170,6 @@ if ($action === 'login' && $method === 'POST') {
 // ========================================
 
 if ($action === 'admin-login' && $method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
     validateRequired($data, ['email', 'password', 'code2fa']);
     
     $email = sanitizeString($data['email']);
@@ -334,7 +345,7 @@ if ($action === 'profile' && $method === 'GET') {
 
 if ($action === 'profile' && $method === 'PUT') {
     $user = requireAuth();
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Ya tenemos $data leído del input JSON
     
     try {
         $updates = [];
@@ -376,5 +387,6 @@ if ($action === 'profile' && $method === 'PUT') {
 // ========================================
 // ENDPOINT NO ENCONTRADO
 // ========================================
-
-sendError('Endpoint no encontrado', 404);
+// Si ninguna acción coincidió, enviamos error y devolvemos qué acción recibimos para depurar
+sendError('Endpoint no encontrado. Action recibida: ' . $action, 404);
+?>
