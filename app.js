@@ -5,7 +5,7 @@
 // CONFIGURATION
 // ========================================
 
-const API_BASE_URL = window.location.origin + '/sigmaforo/api';
+const API_BASE_URL = 'api';
 
 if (typeof L !== 'undefined') {
   delete L.Icon.Default.prototype._getIconUrl;
