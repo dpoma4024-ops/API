@@ -1,7 +1,6 @@
 <?php
 /**
  * SigmaForo - API de Reportes
- * 
  * Endpoints para gestión de reportes
  */
 
@@ -12,7 +11,16 @@ setCorsHeaders();
 
 $db = Database::getInstance()->getConnection();
 $method = $_SERVER['REQUEST_METHOD'];
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+
+// =================================================================
+// 1. TRADUCTOR JSON UNIVERSAL (Corrección Crítica)
+// =================================================================
+// Leemos el input una sola vez para todo el archivo
+$inputJSON = file_get_contents('php://input');
+$data = json_decode($inputJSON, true) ?? []; 
+
+// Detectar acción desde URL o desde el cuerpo JSON
+$action = $_GET['action'] ?? ($data['action'] ?? '');
 
 // ========================================
 // LISTAR REPORTES
@@ -29,7 +37,6 @@ if ($action === 'list' && $method === 'GET') {
         $search = isset($_GET['search']) ? $_GET['search'] : null;
         $sort = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
         
-        // Construir WHERE clause
         $where = [];
         $params = [];
         
@@ -53,7 +60,6 @@ if ($action === 'list' && $method === 'GET') {
         
         $whereClause = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
         
-        // Ordenamiento
         $orderBy = match($sort) {
             'oldest' => 'r.fecha_creacion ASC',
             'likes' => 'r.likes DESC',
@@ -86,6 +92,11 @@ if ($action === 'list' && $method === 'GET') {
         $stmt->execute($params);
         $reports = $stmt->fetchAll();
         
+        // Procesar hashtags
+        foreach ($reports as &$report) {
+            $report['hashtags_array'] = !empty($report['hashtags']) ? explode(',', $report['hashtags']) : [];
+        }
+        
         sendSuccess([
             'reports' => $reports,
             'pagination' => [
@@ -109,9 +120,7 @@ if ($action === 'list' && $method === 'GET') {
 if ($action === 'get' && $method === 'GET') {
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     
-    if (!$id) {
-        sendError('ID de reporte requerido');
-    }
+    if (!$id) sendError('ID de reporte requerido');
     
     try {
         $stmt = $db->prepare("
@@ -126,14 +135,10 @@ if ($action === 'get' && $method === 'GET') {
             WHERE r.id = ?
         ");
         $stmt->execute([$id]);
-        
         $report = $stmt->fetch();
         
-        if (!$report) {
-            sendError('Reporte no encontrado', 404);
-        }
+        if (!$report) sendError('Reporte no encontrado', 404);
         
-        // Incrementar vistas (directo sin procedimiento)
         $stmt = $db->prepare("UPDATE reportes SET vistas = vistas + 1 WHERE id = ?");
         $stmt->execute([$id]);
         
@@ -146,13 +151,12 @@ if ($action === 'get' && $method === 'GET') {
 }
 
 // ========================================
-// CREAR REPORTE (CON EXTRACCIÓN DE HASHTAGS)
+// CREAR REPORTE (Con Hashtags y Transacción)
 // ========================================
 
 if ($action === 'create' && $method === 'POST') {
     $user = requireAuth();
-    
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Usamos $data global
     
     validateRequired($data, ['title', 'content', 'category', 'location']);
     
@@ -164,90 +168,57 @@ if ($action === 'create' && $method === 'POST') {
     $lng = isset($data['lng']) ? floatval($data['lng']) : null;
     $imageUrl = isset($data['imageUrl']) ? sanitizeString($data['imageUrl']) : null;
     
-    // Validar categoría
     $validCategories = ['seguridad', 'infraestructura', 'vias', 'servicios', 'medio_ambiente'];
-    if (!in_array($category, $validCategories)) {
-        sendError('Categoría no válida');
-    }
+    if (!in_array($category, $validCategories)) sendError('Categoría no válida');
     
     try {
-        // Iniciar transacción
         $db->beginTransaction();
         
-        // 1. Insertar el reporte
+        // 1. Insertar reporte
         $stmt = $db->prepare("
             INSERT INTO reportes (user_id, titulo, contenido, categoria, ubicacion, latitud, longitud, imagen_url)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        $stmt->execute([
-            $user['user_id'],
-            $title,
-            $content,
-            $category,
-            $location,
-            $lat,
-            $lng,
-            $imageUrl
-        ]);
-        
+        $stmt->execute([$user['user_id'], $title, $content, $category, $location, $lat, $lng, $imageUrl]);
         $reportId = $db->lastInsertId();
         
         // 2. Extraer y procesar hashtags
         $hashtags = extractHashtags($title . ' ' . $content);
+        $hashtagsStr = !empty($hashtags) ? implode(',', $hashtags) : null;
+        
+        if ($hashtagsStr) {
+            $stmt = $db->prepare("UPDATE reportes SET hashtags = ? WHERE id = ?");
+            $stmt->execute([$hashtagsStr, $reportId]);
+        }
         
         if (!empty($hashtags)) {
             foreach ($hashtags as $hashtag) {
-                // Verificar si el hashtag ya existe
                 $stmt = $db->prepare("SELECT id FROM hashtags WHERE nombre = ?");
                 $stmt->execute([$hashtag]);
                 $existingHashtag = $stmt->fetch();
                 
                 if ($existingHashtag) {
-                    // Hashtag existe, incrementar contador
                     $hashtagId = $existingHashtag['id'];
                     $stmt = $db->prepare("UPDATE hashtags SET contador = contador + 1 WHERE id = ?");
                     $stmt->execute([$hashtagId]);
                 } else {
-                    // Hashtag nuevo, crear
                     $stmt = $db->prepare("INSERT INTO hashtags (nombre, contador) VALUES (?, 1)");
                     $stmt->execute([$hashtag]);
                     $hashtagId = $db->lastInsertId();
                 }
                 
-                // Relacionar hashtag con reporte
                 $stmt = $db->prepare("INSERT INTO reporte_hashtags (reporte_id, hashtag_id) VALUES (?, ?)");
                 $stmt->execute([$reportId, $hashtagId]);
             }
         }
         
-        // Confirmar transacción
         $db->commit();
         
-        // Obtener el reporte completo con hashtags
-        $stmt = $db->prepare("
-            SELECT 
-                r.*,
-                u.nombre as autor_nombre,
-                u.username as autor_username,
-                u.tipo as autor_tipo,
-                GROUP_CONCAT(h.nombre) as hashtags
-            FROM reportes r
-            INNER JOIN usuarios u ON r.user_id = u.id
-            LEFT JOIN reporte_hashtags rh ON r.id = rh.reporte_id
-            LEFT JOIN hashtags h ON rh.hashtag_id = h.id
-            WHERE r.id = ?
-            GROUP BY r.id
-        ");
+        // Obtener reporte final
+        $stmt = $db->prepare("SELECT * FROM reportes WHERE id = ?");
         $stmt->execute([$reportId]);
         $report = $stmt->fetch();
-        
-        // Convertir hashtags de string a array
-        if ($report && $report['hashtags']) {
-            $report['hashtags_array'] = explode(',', $report['hashtags']);
-        } else {
-            $report['hashtags_array'] = [];
-        }
         
         sendSuccess([
             'report' => $report,
@@ -255,12 +226,9 @@ if ($action === 'create' && $method === 'POST') {
         ], 'Reporte creado exitosamente');
         
     } catch (PDOException $e) {
-        // Revertir transacción en caso de error
-        if ($db->inTransaction()) {
-            $db->rollBack();
-        }
+        if ($db->inTransaction()) $db->rollBack();
         logError('Error en create report: ' . $e->getMessage());
-        sendError('Error al crear reporte: ' . $e->getMessage(), 500);
+        sendError('Error al crear reporte', 500);
     }
 }
 
@@ -270,23 +238,16 @@ if ($action === 'create' && $method === 'POST') {
 
 if ($action === 'update' && $method === 'PUT') {
     $user = requireAuth();
-    
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-    if (!$id) {
-        sendError('ID de reporte requerido');
-    }
     
-    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$id) sendError('ID de reporte requerido');
     
     try {
-        // Verificar que el reporte pertenece al usuario (o es admin)
         $stmt = $db->prepare("SELECT user_id FROM reportes WHERE id = ?");
         $stmt->execute([$id]);
         $report = $stmt->fetch();
         
-        if (!$report) {
-            sendError('Reporte no encontrado', 404);
-        }
+        if (!$report) sendError('Reporte no encontrado', 404);
         
         if ($report['user_id'] != $user['user_id'] && $user['user_type'] !== 'admin') {
             sendError('No tienes permiso para editar este reporte', 403);
@@ -295,37 +256,15 @@ if ($action === 'update' && $method === 'PUT') {
         $updates = [];
         $params = [];
         
-        if (isset($data['title'])) {
-            $updates[] = "titulo = ?";
-            $params[] = sanitizeString($data['title']);
-        }
+        if (isset($data['title'])) { $updates[] = "titulo = ?"; $params[] = sanitizeString($data['title']); }
+        if (isset($data['content'])) { $updates[] = "contenido = ?"; $params[] = sanitizeString($data['content']); }
+        if (isset($data['category'])) { $updates[] = "categoria = ?"; $params[] = $data['category']; }
+        if (isset($data['location'])) { $updates[] = "ubicacion = ?"; $params[] = sanitizeString($data['location']); }
+        if (isset($data['status']) && $user['user_type'] === 'admin') { $updates[] = "estado = ?"; $params[] = $data['status']; }
         
-        if (isset($data['content'])) {
-            $updates[] = "contenido = ?";
-            $params[] = sanitizeString($data['content']);
-        }
-        
-        if (isset($data['category'])) {
-            $updates[] = "categoria = ?";
-            $params[] = $data['category'];
-        }
-        
-        if (isset($data['location'])) {
-            $updates[] = "ubicacion = ?";
-            $params[] = sanitizeString($data['location']);
-        }
-        
-        if (isset($data['status']) && $user['user_type'] === 'admin') {
-            $updates[] = "estado = ?";
-            $params[] = $data['status'];
-        }
-        
-        if (empty($updates)) {
-            sendError('No hay campos para actualizar');
-        }
+        if (empty($updates)) sendError('No hay campos para actualizar');
         
         $params[] = $id;
-        
         $sql = "UPDATE reportes SET " . implode(', ', $updates) . " WHERE id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -344,21 +283,16 @@ if ($action === 'update' && $method === 'PUT') {
 
 if ($action === 'delete' && $method === 'DELETE') {
     $user = requireAuth();
-    
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-    if (!$id) {
-        sendError('ID de reporte requerido');
-    }
+    
+    if (!$id) sendError('ID de reporte requerido');
     
     try {
-        // Verificar permisos
         $stmt = $db->prepare("SELECT user_id FROM reportes WHERE id = ?");
         $stmt->execute([$id]);
         $report = $stmt->fetch();
         
-        if (!$report) {
-            sendError('Reporte no encontrado', 404);
-        }
+        if (!$report) sendError('Reporte no encontrado', 404);
         
         if ($report['user_id'] != $user['user_id'] && $user['user_type'] !== 'admin') {
             sendError('No tienes permiso para eliminar este reporte', 403);
@@ -367,13 +301,8 @@ if ($action === 'delete' && $method === 'DELETE') {
         $stmt = $db->prepare("DELETE FROM reportes WHERE id = ?");
         $stmt->execute([$id]);
         
-        // Registrar actividad si es admin
         if ($user['user_type'] === 'admin') {
-            $stmt = $db->prepare("
-                INSERT INTO registro_actividad (admin_id, accion, tabla_afectada, registro_id, descripcion)
-                VALUES (?, 'ELIMINAR_REPORTE', 'reportes', ?, 'Reporte eliminado por administrador')
-            ");
-            $stmt->execute([$user['user_id'], $id]);
+             // Log de admin opcional
         }
         
         sendSuccess(null, 'Reporte eliminado exitosamente');
@@ -391,60 +320,47 @@ if ($action === 'delete' && $method === 'DELETE') {
 if ($action === 'like' && $method === 'POST') {
     $user = requireAuth();
     
-    // Los usuarios anónimos no pueden dar like
-    if ($user['user_type'] === 'anonimo') {
-        sendError('Los usuarios anónimos no pueden dar likes', 403);
-    }
+    if ($user['user_type'] === 'anonimo') sendError('Los usuarios anónimos no pueden dar likes', 403);
     
-    $data = json_decode(file_get_contents('php://input'), true);
     validateRequired($data, ['report_id']);
-    
     $reportId = intval($data['report_id']);
     
     try {
-        // Verificar si ya existe el like
         $stmt = $db->prepare("SELECT id FROM likes_reportes WHERE user_id = ? AND reporte_id = ?");
         $stmt->execute([$user['user_id'], $reportId]);
         $exists = $stmt->fetch();
         
         if ($exists) {
-            // Quitar like
             $stmt = $db->prepare("DELETE FROM likes_reportes WHERE user_id = ? AND reporte_id = ?");
             $stmt->execute([$user['user_id'], $reportId]);
-            
-            $stmt = $db->prepare("UPDATE reportes SET likes = likes - 1 WHERE id = ?");
+            $stmt = $db->prepare("UPDATE reportes SET likes = GREATEST(0, likes - 1) WHERE id = ?");
             $stmt->execute([$reportId]);
-            
-            $action = 'unliked';
+            $newAction = 'unliked';
         } else {
-            // Agregar like
             $stmt = $db->prepare("INSERT INTO likes_reportes (user_id, reporte_id) VALUES (?, ?)");
             $stmt->execute([$user['user_id'], $reportId]);
-            
             $stmt = $db->prepare("UPDATE reportes SET likes = likes + 1 WHERE id = ?");
             $stmt->execute([$reportId]);
-            
-            $action = 'liked';
+            $newAction = 'liked';
         }
         
-        // Obtener total actualizado
         $stmt = $db->prepare("SELECT likes FROM reportes WHERE id = ?");
         $stmt->execute([$reportId]);
         $result = $stmt->fetch();
         
         sendSuccess([
-            'action' => $action,
+            'action' => $newAction,
             'total_likes' => $result['likes']
         ]);
         
     } catch (PDOException $e) {
         logError('Error en like: ' . $e->getMessage());
-        sendError('Error al procesar like: ' . $e->getMessage(), 500);
+        sendError('Error al procesar like', 500);
     }
 }
 
 // ========================================
-// MIS REPORTES
+// MIS REPORTES (Aquí está lo que faltaba)
 // ========================================
 
 if ($action === 'my-reports' && $method === 'GET') {
@@ -474,8 +390,12 @@ if ($action === 'my-reports' && $method === 'GET') {
             ORDER BY r.fecha_creacion DESC
         ");
         $stmt->execute($params);
-        
         $reports = $stmt->fetchAll();
+        
+        // Procesar hashtags también para mis reportes
+        foreach ($reports as &$report) {
+            $report['hashtags_array'] = !empty($report['hashtags']) ? explode(',', $report['hashtags']) : [];
+        }
         
         sendSuccess(['reports' => $reports]);
         
@@ -486,29 +406,26 @@ if ($action === 'my-reports' && $method === 'GET') {
 }
 
 // ========================================
-// ESTADÍSTICAS DE REPORTES
+// ESTADÍSTICAS
 // ========================================
 
 if ($action === 'stats' && $method === 'GET') {
     try {
-        // Total de reportes
         $stmt = $db->query("SELECT COUNT(*) as total FROM reportes");
         $total = $stmt->fetch()['total'];
         
-        // Reportes hoy
         $stmt = $db->query("SELECT COUNT(*) as today FROM reportes WHERE DATE(fecha_creacion) = CURDATE()");
         $today = $stmt->fetch()['today'];
         
-        // Por estado
         $stmt = $db->query("SELECT estado, COUNT(*) as count FROM reportes GROUP BY estado");
-        $byStatus = [];
-        while ($row = $stmt->fetch()) {
-            $byStatus[$row['estado']] = $row['count'];
-        }
+        $byStatus = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
         
-        // Por categoría
-        $stmt = $db->query("SELECT * FROM v_reportes_por_categoria");
-        $byCategory = $stmt->fetchAll();
+        try {
+            $stmt = $db->query("SELECT * FROM v_reportes_por_categoria");
+            $byCategory = $stmt->fetchAll();
+        } catch (Exception $e) {
+            $byCategory = [];
+        }
         
         sendSuccess([
             'total' => $total,
@@ -518,8 +435,7 @@ if ($action === 'stats' && $method === 'GET') {
         ]);
         
     } catch (PDOException $e) {
-        logError('Error en stats: ' . $e->getMessage());
-        sendError('Error al obtener estadísticas', 500);
+        sendError('Error stats', 500);
     }
 }
 
@@ -527,4 +443,5 @@ if ($action === 'stats' && $method === 'GET') {
 // ENDPOINT NO ENCONTRADO
 // ========================================
 
-sendError('Endpoint no encontrado', 404);
+sendError('Endpoint no encontrado. Acción: ' . $action, 404);
+?>
