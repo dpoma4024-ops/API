@@ -264,11 +264,27 @@ function verifyToken($token) {
  * Obtener token del header Authorization
  */
 function getBearerToken() {
-    $headers = getallheaders();
+    $headers = null;
     
-    if (isset($headers['Authorization'])) {
-        $matches = [];
-        if (preg_match('/Bearer\s+(.*)$/i', $headers['Authorization'], $matches)) {
+    // 1. Intentar leer de $_SERVER (Estándar en la nube)
+    if (isset($_SERVER['Authorization'])) {
+        $headers = trim($_SERVER["Authorization"]);
+    }
+    else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { // Algunos servidores lo guardan aquí
+        $headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
+    }
+    // 2. Fallback para Apache local (si la función existe)
+    elseif (function_exists('apache_request_headers')) {
+        $requestHeaders = apache_request_headers();
+        $requestHeaders = array_combine(array_map('ucwords', array_keys($requestHeaders)), array_values($requestHeaders));
+        if (isset($requestHeaders['Authorization'])) {
+            $headers = trim($requestHeaders['Authorization']);
+        }
+    }
+    
+    // Si encontramos el header, extraemos el token
+    if (!empty($headers)) {
+        if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             return $matches[1];
         }
     }
