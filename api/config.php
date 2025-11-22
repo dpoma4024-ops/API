@@ -414,6 +414,7 @@ if (!file_exists(UPLOAD_DIR)) {
 }
 
 function extractHashtags($text) {
+    // Usamos regex para encontrar los hashtags (esto sí funciona)
     preg_match_all('/#([a-zA-Z0-9_áéíóúñÁÉÍÓÚÑ]+)/u', $text, $matches);
     
     if (empty($matches[1])) {
@@ -423,12 +424,14 @@ function extractHashtags($text) {
     $hashtags = array_unique($matches[1]);
     
     $hashtags = array_map(function($tag) {
-        $tag = mb_strtolower($tag, 'UTF-8');
-        return mb_substr($tag, 0, 50);
+        // CAMBIO: Usamos strtolower normal en lugar de mb_strtolower
+        // (Nota: Las tildes mayúsculas podrían no bajar a minúsculas, pero no romperá el server)
+        $tag = strtolower($tag); 
+        return substr($tag, 0, 50); // Usamos substr normal
     }, $hashtags);
     
     $hashtags = array_filter($hashtags, function($tag) {
-        return mb_strlen($tag) >= 3;
+        return strlen($tag) >= 3; // Usamos strlen normal
     });
     
     return array_values($hashtags);
