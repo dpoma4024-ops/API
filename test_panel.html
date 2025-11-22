@@ -113,7 +113,7 @@
 
         async function registerTest() {
             const email = "test_" + Math.floor(Math.random() * 1000) + "@test.com";
-            printOutput("Registrando usuario en: " + API_BASE + "auth.php ...");
+            printOutput("Intentando registrar usuario random: " + email);
             
             try {
                 const response = await fetch(API_BASE + 'auth.php', {
@@ -121,7 +121,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         action: 'register',
-                        nombre: 'Usuario Test',
+                        name: 'Usuario Test', // <--- ANTES DECÍA 'nombre', AHORA DEBE DECIR 'name'
                         email: email, 
                         password: 'password123' 
                     })
