@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Pruebas API - SigmaForo</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; margin-right: 5px; margin-bottom: 5px; }
+        button:hover { background: #0056b3; }
+        button.secundary { background: #6c757d; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        #output { background: #2d2d2d; color: #00ff00; padding: 15px; border-radius: 5px; overflow-x: auto; min-height: 100px; white-space: pre-wrap; font-family: monospace; }
+        .status { font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🛠️ Diagnóstico de API SigmaForo</h1>
+    <p>Usa este panel para probar cada endpoint individualmente.</p>
+
+    <div class="card">
+        <h2>1. Autenticación (auth.php)</h2>
+        <p>Primero inicia sesión para obtener el Token JWT. Sin esto, los demás fallarán.</p>
+        <div class="grid">
+            <div>
+                <label>Email:</label>
+                <input type="email" id="email" placeholder="admin@test.com" value="admin@test.com">
+            </div>
+            <div>
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="123456" value="123456">
+            </div>
+        </div>
+        <br>
+        <button onclick="testLogin()">🔑 Login / Obtener Token</button>
+        <button class="secundary" onclick="registerTest()">📝 Test Registro (Crear User)</button>
+        <p>Token actual: <span id="token-status" class="error">No hay token</span></p>
+    </div>
+
+    <div class="card">
+        <h2>2. Endpoints Públicos</h2>
+        <button onclick="callApi('zones.php', 'GET')">🌍 Probaz zones.php</button>
+        <button onclick="callApi('trending.php', 'GET')">🔥 Probar trending.php</button>
+        <button onclick="callApi('geocoding.php?lat=-18.0&lng=-70.2', 'GET')">📍 Probar geocoding.php</button>
+    </div>
+
+    <div class="card">
+        <h2>3. Endpoints Protegidos (Requieren Token)</h2>
+        <button onclick="callApi('reports.php', 'GET')">📋 Ver Reportes (reports.php)</button>
+        <button onclick="callApi('comments.php?report_id=1', 'GET')">💬 Ver Comentarios (comments.php)</button>
+        <button onclick="callApi('auth.php?action=verify', 'GET')">🛡️ Verificar Token (auth.php)</button>
+    </div>
+
+    <div class="card">
+        <h2>📟 Respuesta del Servidor</h2>
+        <div id="output">Esperando acción...</div>
+    </div>
+
+    <script>
+        let jwtToken = '';
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            printOutput("Intentando Login...");
+
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'login', // Asumiendo que tu auth maneja actions o detecta login
+                        email: email, 
+                        password: password 
+                    })
+                });
+                
+                const data = await response.json();
+                printOutput(data);
+
+                if (data.success || data.token) {
+                    jwtToken = data.data?.token || data.token; // Ajustar según tu estructura JSON
+                    document.getElementById('token-status').innerText = "Token Activo ✅";
+                    document.getElementById('token-status').className = "success";
+                }
+            } catch (error) {
+                printOutput("Error: " + error.message);
+            }
+        }
+
+        async function registerTest() {
+            const email = "test_" + Math.floor(Math.random() * 1000) + "@test.com";
+            printOutput("Intentando registrar usuario random: " + email);
+            
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'register',
+                        nombre: 'Usuario Test',
+                        email: email, 
+                        password: 'password123' 
+                    })
+                });
+                const data = await response.json();
+                printOutput(data);
+            } catch (error) {
+                printOutput("Error: " + error.message);
+            }
+        }
+
+        async function callApi(endpoint, method) {
+            printOutput(`Llamando a ${endpoint}...`);
+            
+            const headers = { 'Content-Type': 'application/json' };
+            if (jwtToken) {
+                headers['Authorization'] = 'Bearer ' + jwtToken;
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: headers
+                });
+                
+                // Intentamos leer como texto primero por si hay error de PHP (no JSON)
+                const text = await response.text();
+                
+                try {
+                    const json = JSON.parse(text);
+                    printOutput(json);
+                } catch (e) {
+                    printOutput("⚠️ No devolvió JSON válido (posible error PHP):\n" + text);
+                }
+
+            } catch (error) {
+                printOutput("Error de red: " + error.message);
+            }
+        }
+
+        function printOutput(data) {
+            const output = document.getElementById('output');
+            if (typeof data === 'object') {
+                output.innerText = JSON.stringify(data, null, 4);
+            } else {
+                output.innerText = data;
+            }
+        }
+    </script>
+</body>
+</html>
