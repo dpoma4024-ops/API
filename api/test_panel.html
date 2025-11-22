@@ -65,43 +65,58 @@
 
     <script>
         let jwtToken = '';
+        
+        // CONFIGURACIÓN DE RUTA:
+        // Como este archivo está en la carpeta 'api' junto con los PHP,
+        // dejamos esto vacío para usar rutas relativas directas.
+        const API_BASE = ''; 
 
         async function testLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            printOutput("Intentando Login...");
+            printOutput("Intentando Login en: " + API_BASE + "auth.php ...");
 
             try {
-                const response = await fetch('auth.php', {
+                const response = await fetch(API_BASE + 'auth.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        action: 'login', // Asumiendo que tu auth maneja actions o detecta login
+                        action: 'login', 
                         email: email, 
                         password: password 
                     })
                 });
                 
-                const data = await response.json();
-                printOutput(data);
+                const text = await response.text(); // Leemos texto primero para depurar
+                try {
+                    const data = JSON.parse(text);
+                    printOutput(data);
 
-                if (data.success || data.token) {
-                    jwtToken = data.data?.token || data.token; // Ajustar según tu estructura JSON
-                    document.getElementById('token-status').innerText = "Token Activo ✅";
-                    document.getElementById('token-status').className = "success";
+                    if (data.success || data.token) {
+                        // Intentamos capturar el token de varias formas posibles
+                        jwtToken = data.token || (data.data && data.data.token);
+                        
+                        if (jwtToken) {
+                            document.getElementById('token-status').innerText = "Token Activo ✅";
+                            document.getElementById('token-status').className = "success";
+                        }
+                    }
+                } catch (e) {
+                     printOutput("⚠️ Error: El servidor no devolvió JSON.\nRespuesta cruda:\n" + text);
                 }
+
             } catch (error) {
-                printOutput("Error: " + error.message);
+                printOutput("Error de red: " + error.message);
             }
         }
 
         async function registerTest() {
             const email = "test_" + Math.floor(Math.random() * 1000) + "@test.com";
-            printOutput("Intentando registrar usuario random: " + email);
+            printOutput("Registrando usuario en: " + API_BASE + "auth.php ...");
             
             try {
-                const response = await fetch('auth.php', {
+                const response = await fetch(API_BASE + 'auth.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -111,15 +126,21 @@
                         password: 'password123' 
                     })
                 });
-                const data = await response.json();
-                printOutput(data);
+                const text = await response.text();
+                try {
+                    const data = JSON.parse(text);
+                    printOutput(data);
+                } catch (e) {
+                     printOutput("⚠️ Error: El servidor no devolvió JSON.\nRespuesta cruda:\n" + text);
+                }
             } catch (error) {
-                printOutput("Error: " + error.message);
+                printOutput("Error de red: " + error.message);
             }
         }
 
         async function callApi(endpoint, method) {
-            printOutput(`Llamando a ${endpoint}...`);
+            const fullPath = API_BASE + endpoint;
+            printOutput(`Llamando a ${fullPath}...`);
             
             const headers = { 'Content-Type': 'application/json' };
             if (jwtToken) {
@@ -127,12 +148,11 @@
             }
 
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetch(fullPath, {
                     method: method,
                     headers: headers
                 });
                 
-                // Intentamos leer como texto primero por si hay error de PHP (no JSON)
                 const text = await response.text();
                 
                 try {
