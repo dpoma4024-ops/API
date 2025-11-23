@@ -1,8 +1,8 @@
 <?php
 /**
  * SigmaForo - API de Comentarios
- * 
  * Endpoints para gestión de comentarios en reportes
+ * VERSIÓN ACTUALIZADA CON NOTIFICACIONES
  */
 
 define('SIGMAFORO_API', true);
@@ -53,7 +53,7 @@ if ($action === 'list' && $method === 'GET') {
 }
 
 // ========================================
-// CREAR COMENTARIO
+// CREAR COMENTARIO (CON NOTIFICACIONES) 🔔
 // ========================================
 
 if ($action === 'create' && $method === 'POST') {
@@ -80,11 +80,12 @@ if ($action === 'create' && $method === 'POST') {
     }
     
     try {
-        // Verificar que el reporte existe
-        $stmt = $db->prepare("SELECT id FROM reportes WHERE id = ?");
+        // Verificar que el reporte existe y obtener info del autor
+        $stmt = $db->prepare("SELECT id, user_id, titulo, categoria, ubicacion FROM reportes WHERE id = ?");
         $stmt->execute([$reportId]);
+        $report = $stmt->fetch();
         
-        if (!$stmt->fetch()) {
+        if (!$report) {
             sendError('Reporte no encontrado', 404);
         }
         
@@ -96,6 +97,31 @@ if ($action === 'create' && $method === 'POST') {
         $stmt->execute([$reportId, $user['user_id'], $content]);
         
         $commentId = $db->lastInsertId();
+        
+        // 🔔 CREAR NOTIFICACIÓN (NUEVO)
+        // Solo notificar si el comentario NO es del autor del reporte
+        if ($report['user_id'] != $user['user_id']) {
+            // Obtener nombre del usuario que comenta
+            $stmt = $db->prepare("SELECT nombre FROM usuarios WHERE id = ?");
+            $stmt->execute([$user['user_id']]);
+            $commenterData = $stmt->fetch();
+            
+            // Crear notificación
+            $stmt = $db->prepare("
+                INSERT INTO notificaciones 
+                (user_id, tipo, titulo, descripcion, reporte_id, categoria, ubicacion, from_user_id)
+                VALUES (?, 'comment', ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $report['user_id'],
+                'Nuevo comentario en tu reporte',
+                $commenterData['nombre'] . ' comentó en "' . substr($report['titulo'], 0, 50) . '"',
+                $reportId,
+                $report['categoria'],
+                $report['ubicacion'],
+                $user['user_id']
+            ]);
+        }
         
         // Obtener el comentario completo
         $stmt = $db->prepare("

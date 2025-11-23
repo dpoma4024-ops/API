@@ -960,24 +960,16 @@ function loadTrending() {
 // NOTIFICATIONS (Mock for now)
 // ========================================
 
-function loadNotifications() {
-  const container = document.getElementById('notificationList');
-  if (!container) return;
-
-  // Mock - se puede conectar a la BD después
-  container.innerHTML = '<div class="empty-state">No hay notificaciones</div>';
-  
-  const badge = document.querySelector('.notification-badge');
-  if (badge) {
-    badge.style.display = 'none';
-  }
-}
-
 function toggleNotifications() {
-  const dropdown = document.getElementById('notificationDropdown');
-  if (dropdown) {
-    dropdown.classList.toggle('show');
-  }
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+        const isShowing = dropdown.classList.toggle('show');
+        
+        // Si se abre el dropdown, cargar notificaciones
+        if (isShowing) {
+            renderHeaderNotifications();
+        }
+    }
 }
 
 function markAllAsRead() {

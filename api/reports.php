@@ -2,6 +2,7 @@
 /**
  * SigmaForo - API de Reportes
  * Endpoints para gestión de reportes
+ * VERSIÓN ACTUALIZADA CON NOTIFICACIONES
  */
 
 define('SIGMAFORO_API', true);
@@ -12,10 +13,7 @@ setCorsHeaders();
 $db = Database::getInstance()->getConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 
-// =================================================================
-// 1. TRADUCTOR JSON UNIVERSAL (Corrección Crítica)
-// =================================================================
-// Leemos el input una sola vez para todo el archivo
+// Leer el input una sola vez para todo el archivo
 $inputJSON = file_get_contents('php://input');
 $data = json_decode($inputJSON, true) ?? []; 
 
@@ -156,7 +154,6 @@ if ($action === 'get' && $method === 'GET') {
 
 if ($action === 'create' && $method === 'POST') {
     $user = requireAuth();
-    // Usamos $data global
     
     validateRequired($data, ['title', 'content', 'category', 'location']);
     
@@ -233,7 +230,7 @@ if ($action === 'create' && $method === 'POST') {
 }
 
 // ========================================
-// ACTUALIZAR REPORTE
+// ACTUALIZAR REPORTE (CON NOTIFICACIONES) 🔔
 // ========================================
 
 if ($action === 'update' && $method === 'PUT') {
@@ -243,7 +240,8 @@ if ($action === 'update' && $method === 'PUT') {
     if (!$id) sendError('ID de reporte requerido');
     
     try {
-        $stmt = $db->prepare("SELECT user_id FROM reportes WHERE id = ?");
+        // Obtener datos del reporte actual
+        $stmt = $db->prepare("SELECT user_id, estado FROM reportes WHERE id = ?");
         $stmt->execute([$id]);
         $report = $stmt->fetch();
         
@@ -256,11 +254,35 @@ if ($action === 'update' && $method === 'PUT') {
         $updates = [];
         $params = [];
         
-        if (isset($data['title'])) { $updates[] = "titulo = ?"; $params[] = sanitizeString($data['title']); }
-        if (isset($data['content'])) { $updates[] = "contenido = ?"; $params[] = sanitizeString($data['content']); }
-        if (isset($data['category'])) { $updates[] = "categoria = ?"; $params[] = $data['category']; }
-        if (isset($data['location'])) { $updates[] = "ubicacion = ?"; $params[] = sanitizeString($data['location']); }
-        if (isset($data['status']) && $user['user_type'] === 'admin') { $updates[] = "estado = ?"; $params[] = $data['status']; }
+        // Guardar el estado anterior para detectar cambios
+        $oldStatus = $report['estado'];
+        $statusChanged = false;
+        $newStatus = null;
+        
+        if (isset($data['title'])) { 
+            $updates[] = "titulo = ?"; 
+            $params[] = sanitizeString($data['title']); 
+        }
+        if (isset($data['content'])) { 
+            $updates[] = "contenido = ?"; 
+            $params[] = sanitizeString($data['content']); 
+        }
+        if (isset($data['category'])) { 
+            $updates[] = "categoria = ?"; 
+            $params[] = $data['category']; 
+        }
+        if (isset($data['location'])) { 
+            $updates[] = "ubicacion = ?"; 
+            $params[] = sanitizeString($data['location']); 
+        }
+        
+        // Solo admin puede cambiar estado
+        if (isset($data['status']) && $user['user_type'] === 'admin') { 
+            $updates[] = "estado = ?"; 
+            $newStatus = $data['status'];
+            $params[] = $newStatus;
+            $statusChanged = ($oldStatus !== $newStatus);
+        }
         
         if (empty($updates)) sendError('No hay campos para actualizar');
         
@@ -268,6 +290,77 @@ if ($action === 'update' && $method === 'PUT') {
         $sql = "UPDATE reportes SET " . implode(', ', $updates) . " WHERE id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
+        
+        // 🔔 CREAR NOTIFICACIONES DE CAMBIO DE ESTADO (NUEVO)
+        if ($statusChanged && $newStatus) {
+            // Obtener datos completos del reporte actualizado
+            $stmt = $db->prepare("SELECT * FROM reportes WHERE id = ?");
+            $stmt->execute([$id]);
+            $updatedReport = $stmt->fetch();
+            
+            if ($updatedReport) {
+                $statusLabels = [
+                    'pendiente' => 'Pendiente',
+                    'en_revision' => 'En Revisión',
+                    'en_proceso' => 'En Proceso',
+                    'resuelto' => 'Resuelto'
+                ];
+                
+                // 1. Notificar al autor del reporte
+                $stmt = $db->prepare("
+                    INSERT INTO notificaciones 
+                    (user_id, tipo, titulo, descripcion, reporte_id, categoria, ubicacion)
+                    VALUES (?, 'incident_status_update', ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $updatedReport['user_id'],
+                    'Actualización de estado',
+                    'Tu reporte "' . substr($updatedReport['titulo'], 0, 50) . '" cambió a: ' . $statusLabels[$newStatus],
+                    $id,
+                    $updatedReport['categoria'],
+                    $updatedReport['ubicacion']
+                ]);
+                
+                // 2. Notificar a usuarios que siguen la zona (OPCIONAL)
+                if ($updatedReport['latitud'] && $updatedReport['longitud']) {
+                    $stmt = $db->prepare("
+                        SELECT DISTINCT z.user_id 
+                        FROM zonas_seguidas z
+                        WHERE z.user_id != ?
+                        AND (6371 * acos(
+                            cos(radians(z.latitud)) * 
+                            cos(radians(?)) * 
+                            cos(radians(?) - radians(z.longitud)) + 
+                            sin(radians(z.latitud)) * 
+                            sin(radians(?))
+                        )) <= z.radio_km
+                    ");
+                    $stmt->execute([
+                        $updatedReport['user_id'],
+                        $updatedReport['latitud'],
+                        $updatedReport['longitud'],
+                        $updatedReport['latitud']
+                    ]);
+                    $followers = $stmt->fetchAll();
+                    
+                    foreach ($followers as $follower) {
+                        $stmt = $db->prepare("
+                            INSERT INTO notificaciones 
+                            (user_id, tipo, titulo, descripcion, reporte_id, categoria, ubicacion)
+                            VALUES (?, 'new_incident_in_followed_area', ?, ?, ?, ?, ?)
+                        ");
+                        $stmt->execute([
+                            $follower['user_id'],
+                            'Actualización en zona seguida',
+                            'El reporte "' . substr($updatedReport['titulo'], 0, 50) . '" cambió a: ' . $statusLabels[$newStatus],
+                            $id,
+                            $updatedReport['categoria'],
+                            $updatedReport['ubicacion']
+                        ]);
+                    }
+                }
+            }
+        }
         
         sendSuccess(null, 'Reporte actualizado exitosamente');
         
@@ -301,10 +394,6 @@ if ($action === 'delete' && $method === 'DELETE') {
         $stmt = $db->prepare("DELETE FROM reportes WHERE id = ?");
         $stmt->execute([$id]);
         
-        if ($user['user_type'] === 'admin') {
-             // Log de admin opcional
-        }
-        
         sendSuccess(null, 'Reporte eliminado exitosamente');
         
     } catch (PDOException $e) {
@@ -314,7 +403,7 @@ if ($action === 'delete' && $method === 'DELETE') {
 }
 
 // ========================================
-// DAR/QUITAR LIKE
+// DAR/QUITAR LIKE (CON NOTIFICACIONES) 🔔
 // ========================================
 
 if ($action === 'like' && $method === 'POST') {
@@ -326,22 +415,55 @@ if ($action === 'like' && $method === 'POST') {
     $reportId = intval($data['report_id']);
     
     try {
+        // Obtener info del reporte
+        $stmt = $db->prepare("SELECT user_id, titulo, categoria, ubicacion FROM reportes WHERE id = ?");
+        $stmt->execute([$reportId]);
+        $report = $stmt->fetch();
+        
+        if (!$report) {
+            sendError('Reporte no encontrado', 404);
+        }
+        
         $stmt = $db->prepare("SELECT id FROM likes_reportes WHERE user_id = ? AND reporte_id = ?");
         $stmt->execute([$user['user_id'], $reportId]);
         $exists = $stmt->fetch();
         
         if ($exists) {
+            // QUITAR LIKE
             $stmt = $db->prepare("DELETE FROM likes_reportes WHERE user_id = ? AND reporte_id = ?");
             $stmt->execute([$user['user_id'], $reportId]);
             $stmt = $db->prepare("UPDATE reportes SET likes = GREATEST(0, likes - 1) WHERE id = ?");
             $stmt->execute([$reportId]);
             $newAction = 'unliked';
         } else {
+            // DAR LIKE
             $stmt = $db->prepare("INSERT INTO likes_reportes (user_id, reporte_id) VALUES (?, ?)");
             $stmt->execute([$user['user_id'], $reportId]);
             $stmt = $db->prepare("UPDATE reportes SET likes = likes + 1 WHERE id = ?");
             $stmt->execute([$reportId]);
             $newAction = 'liked';
+            
+            // 🔔 CREAR NOTIFICACIÓN (NUEVO)
+            if ($report['user_id'] != $user['user_id']) {
+                $stmt = $db->prepare("SELECT nombre FROM usuarios WHERE id = ?");
+                $stmt->execute([$user['user_id']]);
+                $likerData = $stmt->fetch();
+                
+                $stmt = $db->prepare("
+                    INSERT INTO notificaciones 
+                    (user_id, tipo, titulo, descripcion, reporte_id, categoria, ubicacion, from_user_id)
+                    VALUES (?, 'like', ?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $report['user_id'],
+                    'Le gustó tu reporte',
+                    'A ' . $likerData['nombre'] . ' le gustó "' . substr($report['titulo'], 0, 50) . '"',
+                    $reportId,
+                    $report['categoria'],
+                    $report['ubicacion'],
+                    $user['user_id']
+                ]);
+            }
         }
         
         $stmt = $db->prepare("SELECT likes FROM reportes WHERE id = ?");
@@ -360,7 +482,7 @@ if ($action === 'like' && $method === 'POST') {
 }
 
 // ========================================
-// MIS REPORTES (Aquí está lo que faltaba)
+// MIS REPORTES
 // ========================================
 
 if ($action === 'my-reports' && $method === 'GET') {
@@ -444,4 +566,4 @@ if ($action === 'stats' && $method === 'GET') {
 // ========================================
 
 sendError('Endpoint no encontrado. Acción: ' . $action, 404);
-?>
+?> 

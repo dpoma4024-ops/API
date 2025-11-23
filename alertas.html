@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alertas - SigmaForo</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="alertas-styles.css">
 </head>
 <body>
     <!-- Navbar -->
@@ -57,7 +58,7 @@
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                         </svg>
-                        <span class="notification-badge">3</span>
+                        <span class="notification-badge">0</span>
                     </button>
                     <div id="notificationDropdown" class="notification-dropdown">
                         <div class="notification-header">
@@ -105,6 +106,18 @@
                         No Leídas
                         <span class="tab-count" id="countUnread">0</span>
                     </button>
+                    <button class="tab-btn" data-tab="comments" onclick="switchAlertTab('comments')">
+                        Comentarios
+                        <span class="tab-count" id="countComments">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="likes" onclick="switchAlertTab('likes')">
+                        Likes
+                        <span class="tab-count" id="countLikes">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="status" onclick="switchAlertTab('status')">
+                        Actualizaciones
+                        <span class="tab-count" id="countStatus">0</span>
+                    </button>
                 </div>
 
                 <!-- Alerts List -->
@@ -127,12 +140,12 @@
                         <span class="stat-value" id="newAlerts">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Mis Reportes</span>
-                        <span class="stat-value" id="myReports">0</span>
+                        <span class="stat-label">Total Notificaciones</span>
+                        <span class="stat-value" id="totalAlerts">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Zonas Seguidas</span>
-                        <span class="stat-value" id="followedZones">3</span>
+                        <span class="stat-label">Reportes Seguidos</span>
+                        <span class="stat-value" id="followedReports">0</span>
                     </div>
                 </div>
             </aside>
@@ -142,18 +155,220 @@
     <!-- Toast Container -->
     <div id="toastContainer"></div>
 
-    <script src="mock-data.js"></script>
     <script src="app.js"></script>
+    <script src="notifications.js"></script>
     <script>
+        // Verificar autenticación
         if (!isAuthenticated()) {
             window.location.href = 'index.html';
         }
+        
+        // Variable global para el filtro actual
+        let currentAlertFilter = 'all';
+        let allNotifications = [];
+        
+        /**
+         * Cargar alertas desde la API
+         */
+        async function loadAlerts() {
+            const container = document.getElementById('alertsList');
+            container.innerHTML = '<div class="empty-state">Cargando notificaciones...</div>';
+            
+            try {
+                const result = await loadNotifications(false, 50);
+                allNotifications = result.notifications;
+                
+                // Actualizar contadores
+                updateAlertCounts(result);
+                
+                // Renderizar según filtro actual
+                renderFilteredAlerts();
+                
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                container.innerHTML = '<div class="empty-state">Error al cargar notificaciones</div>';
+            }
+        }
+        
+        /**
+         * Actualizar contadores de las tabs
+         */
+        function updateAlertCounts(result) {
+            document.getElementById('countAll').textContent = result.total;
+            document.getElementById('countUnread').textContent = result.unread;
+            
+            // Contar por tipo
+            const comments = allNotifications.filter(n => n.tipo === 'comment').length;
+            const likes = allNotifications.filter(n => n.tipo === 'like').length;
+            const status = allNotifications.filter(n => n.tipo === 'incident_status_update').length;
+            
+            document.getElementById('countComments').textContent = comments;
+            document.getElementById('countLikes').textContent = likes;
+            document.getElementById('countStatus').textContent = status;
+            
+            // Actualizar estadísticas sidebar
+            document.getElementById('newAlerts').textContent = result.unread;
+            document.getElementById('totalAlerts').textContent = result.total;
+        }
+        
+        /**
+         * Cambiar filtro de alertas
+         */
+        function switchAlertTab(tab) {
+            currentAlertFilter = tab;
+            
+            // Actualizar tabs activas
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Renderizar
+            renderFilteredAlerts();
+        }
+        
+        /**
+         * Renderizar alertas según filtro
+         */
+        function renderFilteredAlerts() {
+            let filtered = [...allNotifications];
+            
+            // Aplicar filtro
+            switch(currentAlertFilter) {
+                case 'unread':
+                    filtered = filtered.filter(n => !n.is_read);
+                    break;
+                case 'comments':
+                    filtered = filtered.filter(n => n.tipo === 'comment');
+                    break;
+                case 'likes':
+                    filtered = filtered.filter(n => n.tipo === 'like');
+                    break;
+                case 'status':
+                    filtered = filtered.filter(n => n.tipo === 'incident_status_update');
+                    break;
+                // 'all' no aplica filtro
+            }
+            
+            const container = document.getElementById('alertsList');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <p>No hay notificaciones para mostrar</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(notif => createAlertCard(notif)).join('');
+        }
+        
+        /**
+         * Crear HTML de tarjeta de alerta
+         */
+        function createAlertCard(notif) {
+            const iconMap = {
+                'comment': {
+                    icon: '💬',
+                    color: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgba(59, 130, 246, 0.3)'
+                },
+                'like': {
+                    icon: '👍',
+                    color: 'rgba(34, 197, 94, 0.1)',
+                    borderColor: 'rgba(34, 197, 94, 0.3)'
+                },
+                'incident_status_update': {
+                    icon: '🔄',
+                    color: 'rgba(245, 158, 11, 0.1)',
+                    borderColor: 'rgba(245, 158, 11, 0.3)'
+                },
+                'new_incident_in_followed_area': {
+                    icon: '📍',
+                    color: 'rgba(168, 85, 247, 0.1)',
+                    borderColor: 'rgba(168, 85, 247, 0.3)'
+                },
+                'nearby_incident': {
+                    icon: '⚠️',
+                    color: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: 'rgba(239, 68, 68, 0.3)'
+                }
+            };
+            
+            const style = iconMap[notif.tipo] || iconMap['nearby_incident'];
+            const unreadClass = notif.is_read ? '' : 'unread';
+            
+            // Determinar URL de acción
+            let actionUrl = '#';
+            if (notif.reporte_id) {
+                actionUrl = `reporte-detalle.html?id=${notif.reporte_id}`;
+            }
+            
+            return `
+                <div class="alert-card ${unreadClass}" 
+                     style="border-left: 3px solid ${style.borderColor};">
+                    <div class="alert-icon" style="background-color: ${style.color};">
+                        <span style="font-size: 28px;">${style.icon}</span>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">${notif.titulo}</div>
+                            <div class="alert-time">${getRelativeTime(notif.fecha_creacion)}</div>
+                        </div>
+                        <div class="alert-description">${notif.descripcion}</div>
+                        ${notif.ubicacion ? `
+                            <div class="alert-location">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                ${notif.ubicacion}
+                            </div>
+                        ` : ''}
+                        <div class="alert-actions">
+                            ${notif.reporte_id ? `
+                                <button class="btn btn-sm btn-primary" onclick="window.location.href='${actionUrl}'">
+                                    Ver Reporte
+                                </button>
+                            ` : ''}
+                            ${!notif.is_read ? `
+                                <button class="btn btn-sm btn-outline" onclick="markNotificationAsRead(${notif.id}); event.stopPropagation();">
+                                    Marcar como leída
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-outline" onclick="deleteNotification(${notif.id}); event.stopPropagation();">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Inicialización
+         */
         window.addEventListener('DOMContentLoaded', () => {
             loadUserData();
             loadAlerts();
             loadTrending();
-            loadNotifications();
+            
+            // Obtener número de reportes seguidos (esto vendría de zonas_seguidas)
+            // Por ahora ponemos un valor mock
+            document.getElementById('followedReports').textContent = '3';
         });
+        
+        // Recargar notificaciones cada 30 segundos
+        setInterval(() => {
+            loadAlerts();
+        }, 30000);
     </script>
 </body>
 </html>
