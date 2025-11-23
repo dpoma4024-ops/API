@@ -21,7 +21,7 @@
 }
 
 .trending-card h3::before {
-    content: '🔥';
+    
     font-size: 24px;
 }
 
@@ -88,7 +88,6 @@
 }
 
 .trending-item:nth-child(1) .trending-rank::after {
-    content: '👑';
     position: absolute;
     top: -8px;
     right: -8px;
