@@ -9,14 +9,15 @@
  */
 async function loadNotifications(onlyUnread = false, limit = 20) {
     try {
-        const url = `${API_BASE_URL}/notifications.php?action=list&unread=${onlyUnread}&limit=${limit}`;
-        const data = await apiRequest(url);
+        // CAMBIO AQUÍ: Solo ponemos el nombre del archivo, sin la variable base
+        const endpoint = `notifications.php?action=list&unread=${onlyUnread}&limit=${limit}`;
+        
+        const data = await apiRequest(endpoint);
         
         if (data.success && data.data) {
-            return data.data; // ✅ Camino feliz
+            return data.data;
         } else {
             console.warn('API response not successful:', data);
-            // Si la API responde pero success es false, devolvemos vacío para no romper el JS
             return { notifications: [], total: 0, unread: 0 };
         }
     } catch (error) {
