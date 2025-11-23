@@ -12,8 +12,12 @@ async function loadNotifications(onlyUnread = false, limit = 20) {
         const url = `${API_BASE_URL}/notifications.php?action=list&unread=${onlyUnread}&limit=${limit}`;
         const data = await apiRequest(url);
         
-        if (data.success) {
-            return data.data;
+        if (data.success && data.data) {
+            return data.data; // ✅ Camino feliz
+        } else {
+            console.warn('API response not successful:', data);
+            // Si la API responde pero success es false, devolvemos vacío para no romper el JS
+            return { notifications: [], total: 0, unread: 0 };
         }
     } catch (error) {
         console.error('Error loading notifications:', error);
