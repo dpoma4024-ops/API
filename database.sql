@@ -450,3 +450,5 @@ SELECT
 FROM usuarios u
 LEFT JOIN archivos_subidos a ON u.id = a.user_id
 GROUP BY u.id, u.nombre, u.username;
+
+ALTER TABLE reportes ADD COLUMN hashtags TEXT NULL AFTER imagen_url;
