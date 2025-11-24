@@ -363,25 +363,52 @@ function getStatusColor(status) {
 }
 
 // ========================================
-// USER DATA LOADING
+// USER DATA LOADING (Modificada para Fotos)
 // ========================================
 
 function loadUserData() {
   const user = getCurrentUser();
   if (!user) return;
 
+  // 1. Actualizar Nombres
   const userNameElements = document.querySelectorAll('#userName');
-  const userInitialElements = document.querySelectorAll('#userInitial');
-
   userNameElements.forEach(el => {
     el.textContent = user.name;
   });
 
+  // 2. Actualizar Avatar (Foto o Letra)
+  // Buscamos todos los elementos donde solía ir la inicial
+  const userInitialElements = document.querySelectorAll('#userInitial');
+
   userInitialElements.forEach(el => {
-    el.textContent = user.name.charAt(0).toUpperCase();
+    // Limpiamos cualquier contenido previo
+    el.innerHTML = '';
+
+    if (user.avatar_url) {
+      // OPCIÓN A: El usuario tiene foto
+      // Insertamos una etiqueta <img> que ocupe todo el espacio
+      el.innerHTML = `<img src="${user.avatar_url}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+      
+      // Ajustes estéticos al contenedor padre (para quitar el color de fondo de la letra)
+      el.style.backgroundColor = 'transparent';
+      el.style.display = 'block'; // Aseguramos que se comporte como bloque para la imagen
+      
+      // Si el contenedor padre tiene la clase 'avatar', le quitamos el fondo también
+      if(el.parentElement && el.parentElement.classList.contains('avatar')) {
+          el.parentElement.style.backgroundColor = 'transparent';
+      }
+
+    } else {
+      // OPCIÓN B: No tiene foto (Comportamiento original)
+      el.textContent = user.name.charAt(0).toUpperCase();
+      // Centramos el texto por si acaso se desajustó
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+    }
   });
 
-  // Ocultar opciones de menú según tipo de usuario
+  // 3. Ocultar opciones de menú según tipo de usuario
   if (user.type === 'anonimo') {
     const menuPerfil = document.getElementById('menuPerfil');
     const menuReportes = document.getElementById('menuReportes');
@@ -1205,3 +1232,61 @@ document.addEventListener('click', function(event) {
     });
   }
 });
+
+// ========================================
+// FUNCIÓN PARA SUBIR AVATAR
+// ========================================
+
+async function uploadAvatar(input) {
+  // Validar que haya archivo seleccionado
+  if (!input.files || !input.files[0]) return;
+
+  const file = input.files[0];
+  
+  // Validar tamaño antes de enviar (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+      showToast('La imagen es muy pesada (Máx 2MB)', 'error');
+      return;
+  }
+
+  const formData = new FormData();
+  formData.append('avatar', file); // 'avatar' es la key que espera uploads.php
+
+  // Mostrar indicador de carga
+  showToast('Subiendo foto de perfil...', 'info');
+
+  try {
+    // Llamada a la API (Endpoint que creamos en uploads.php)
+    // Nota: Al usar FormData, NO ponemos headers Content-Type manualmente
+    const response = await fetch(`${API_BASE_URL}/uploads.php?action=avatar`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${getToken()}`
+        },
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // 1. Actualizamos los datos locales del usuario con la nueva URL
+      const currentUser = getCurrentUser();
+      currentUser.avatar_url = data.data.url; 
+      saveUser(currentUser, getToken());
+
+      // 2. Refrescamos la pantalla para ver la foto nueva al instante
+      loadUserData();
+      
+      showToast('¡Foto actualizada con éxito!', 'success');
+    } else {
+        throw new Error(data.message || 'Error al subir imagen');
+    }
+
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Error de conexión', 'error');
+  }
+  
+  // Limpiar el input para permitir subir la misma foto de nuevo si falla
+  input.value = '';
+}
