@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-content">
             <div class="nav-left">
@@ -86,7 +85,6 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="container">
         <div class="profile-container">
             <div class="profile-header-card">
@@ -94,6 +92,19 @@
                 <div class="profile-info">
                     <div class="profile-avatar-large">
                         <span id="profileInitial">U</span>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 10px; margin-bottom: 15px;">
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="uploadAvatar(this)">
+                        
+                        <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline" 
+                            onclick="document.getElementById('avatarInput').click()"
+                            style="border-radius: 20px; font-size: 0.85rem; padding: 5px 15px;"
+                        >
+                            📸 Cambiar Foto
+                        </button>
                     </div>
                     <div class="profile-details">
                         <h1 id="profileName">Usuario</h1>
@@ -111,7 +122,6 @@
             </div>
 
             <div class="profile-content">
-                <!-- Profile Stats -->
                 <div class="profile-stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
@@ -151,7 +161,6 @@
                     </div>
                 </div>
 
-                <!-- Profile Form -->
                 <div class="profile-form-card">
                     <h2>Información Personal</h2>
                     <form id="profileForm" onsubmit="saveProfile(event)">
@@ -182,18 +191,15 @@
                     </form>
                 </div>
 
-                <!-- Activity Timeline -->
                 <div class="profile-activity-card">
                     <h2>Actividad Reciente</h2>
                     <div id="userActivity" class="activity-timeline">
-                        <!-- Se cargará dinámicamente -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toastContainer"></div>
 
     <script src="app.js"></script>
