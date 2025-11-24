@@ -452,3 +452,46 @@ LEFT JOIN archivos_subidos a ON u.id = a.user_id
 GROUP BY u.id, u.nombre, u.username;
 
 ALTER TABLE reportes ADD COLUMN hashtags TEXT NULL AFTER imagen_url;
+
+USE railway;
+
+-- ========================================
+-- PASO 1: AGREGAR COLUMNA
+-- (Si falla diciendo "Duplicate column", ignora este paso)
+-- ========================================
+ALTER TABLE notificaciones 
+ADD COLUMN from_user_id INT NULL AFTER reporte_id;
+
+-- ========================================
+-- PASO 2: AGREGAR RELACIÓN (Foreign Key)
+-- ========================================
+ALTER TABLE notificaciones 
+ADD CONSTRAINT fk_notif_from_user 
+FOREIGN KEY (from_user_id) REFERENCES usuarios(id) ON DELETE SET NULL;
+
+-- ========================================
+-- PASO 3: AGREGAR ÍNDICE
+-- ========================================
+ALTER TABLE notificaciones 
+ADD INDEX idx_from_user (from_user_id);
+
+-- ========================================
+-- PASO 4: ACTUALIZAR LA VISTA
+-- (Esto siempre funciona porque usa OR REPLACE)
+-- ========================================
+CREATE OR REPLACE VIEW v_notificaciones_completas AS
+SELECT 
+    n.*,
+    r.titulo as reporte_titulo,
+    r.imagen_url as reporte_imagen,
+    r.estado as reporte_estado,
+    u_to.nombre as destinatario_nombre,
+    u_to.username as destinatario_username,
+    u_from.nombre as remitente_nombre,
+    u_from.username as remitente_username
+FROM notificaciones n
+LEFT JOIN reportes r ON n.reporte_id = r.id
+INNER JOIN usuarios u_to ON n.user_id = u_to.id
+LEFT JOIN usuarios u_from ON n.from_user_id = u_from.id;
+
+SELECT 'Actualización de notificaciones completada!' as mensaje;
