@@ -26,6 +26,16 @@ define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 define('DB_CHARSET', 'utf8mb4');
 
 // ========================================
+// CONFIGURACIÓN CLOUDINARY (Imágenes)
+// ========================================
+define('CLOUDINARY_CLOUD_NAME', 'dzclcz5hn');
+define('CLOUDINARY_API_KEY',    '168839351376215');
+define('CLOUDINARY_API_SECRET', 'it1Xloz08iN1QW5iDB8dZHjp9Vc'); // <--- ¡Pega tu secreto aquí!
+
+// URL de subida automática (No tocar)
+define('CLOUDINARY_URL', 'https://api.cloudinary.com/v1_1/' . CLOUDINARY_CLOUD_NAME . '/image/upload');
+
+// ========================================
 // CONFIGURACIÓN DE LA APLICACIÓN
 // ========================================
 
@@ -320,41 +330,65 @@ function requireAdmin() {
 }
 
 /**
- * Subir archivo
+ * Subir archivo a Cloudinary (Persistente)
+ * Reemplaza al sistema de archivos local que se borra en Koyeb
  */
 function uploadFile($file, $subfolder = 'reportes') {
+    // 1. Validaciones básicas
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
         return null;
     }
-    
-    // Validar tamaño
+
+    // Validar tamaño (5MB)
     if ($file['size'] > MAX_FILE_SIZE) {
-        sendError('El archivo es demasiado grande. Máximo ' . (MAX_FILE_SIZE / 1024 / 1024) . 'MB');
+        sendError('El archivo es demasiado grande. Máximo 5MB');
     }
-    
-    // Validar extensión
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($extension, ALLOWED_EXTENSIONS)) {
-        sendError('Tipo de archivo no permitido. Solo: ' . implode(', ', ALLOWED_EXTENSIONS));
+
+    // Validar que sea imagen real
+    $mimeType = mime_content_type($file['tmp_name']);
+    if (strpos($mimeType, 'image/') !== 0) {
+        sendError('El archivo debe ser una imagen válida');
     }
+
+    // 2. Preparar firma de seguridad para Cloudinary
+    // (Cloudinary exige ordenar parámetros alfabéticamente: folder, timestamp)
+    $timestamp = time();
+    $folderPath = 'sigmaforo/' . $subfolder;
     
-    // Generar nombre único
-    $filename = uniqid() . '_' . time() . '.' . $extension;
-    $uploadPath = UPLOAD_DIR . $subfolder . '/';
+    // La firma secreta
+    $signatureString = "folder=" . $folderPath . "&timestamp=" . $timestamp . CLOUDINARY_API_SECRET;
+    $signature = sha1($signatureString);
+
+    // 3. Preparar el paquete para enviar
+    $postFields = [
+        'file' => new CURLFile($file['tmp_name']),
+        'api_key' => CLOUDINARY_API_KEY,
+        'timestamp' => $timestamp,
+        'folder' => $folderPath,
+        'signature' => $signature
+    ];
+
+    // 4. Enviar a la nube usando cURL (El cartero de PHP)
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, CLOUDINARY_URL);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
-    // Crear directorio si no existe
-    if (!file_exists($uploadPath)) {
-        mkdir($uploadPath, 0755, true);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    // 5. Verificar éxito
+    if ($httpCode !== 200) {
+        // Si falla, guardamos el error en los logs de Koyeb para revisarlo
+        error_log("Error Cloudinary: " . $response);
+        return null; 
     }
-    
-    $fullPath = $uploadPath . $filename;
-    
-    // Mover archivo
-    if (move_uploaded_file($file['tmp_name'], $fullPath)) {
-        return $subfolder . '/' . $filename;
-    }
-    
-    return null;
+
+    // 6. Extraer el link seguro
+    $data = json_decode($response, true);
+    return $data['secure_url'] ?? null;
 }
 
 /**
