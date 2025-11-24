@@ -482,7 +482,7 @@ if ($action === 'like' && $method === 'POST') {
 }
 
 // ========================================
-// MIS REPORTES
+// MIS REPORTES (Versión Corregida: Incluye datos de usuario)
 // ========================================
 
 if ($action === 'my-reports' && $method === 'GET') {
@@ -495,6 +495,7 @@ if ($action === 'my-reports' && $method === 'GET') {
     try {
         $status = isset($_GET['status']) ? $_GET['status'] : 'all';
         
+        // Usamos alias 'r' para reportes
         $where = "WHERE r.user_id = ?";
         $params = [$user['user_id']];
         
@@ -503,18 +504,24 @@ if ($action === 'my-reports' && $method === 'GET') {
             $params[] = $status;
         }
         
+        // CAMBIO CRÍTICO AQUÍ: Agregamos JOIN usuarios y los campos u.nombre, u.username
         $stmt = $db->prepare("
             SELECT 
                 r.*,
+                u.nombre as autor_nombre,
+                u.username as autor_username,
+                u.tipo as autor_tipo,
                 (SELECT COUNT(*) FROM comentarios WHERE reporte_id = r.id) as total_comentarios
             FROM reportes r
+            INNER JOIN usuarios u ON r.user_id = u.id
             $where
             ORDER BY r.fecha_creacion DESC
         ");
+        
         $stmt->execute($params);
         $reports = $stmt->fetchAll();
         
-        // Procesar hashtags también para mis reportes
+        // Procesar hashtags
         foreach ($reports as &$report) {
             $report['hashtags_array'] = !empty($report['hashtags']) ? explode(',', $report['hashtags']) : [];
         }
