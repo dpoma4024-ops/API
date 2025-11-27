@@ -22,14 +22,14 @@ async function loadProfileData() {
             document.getElementById('profileName').textContent = profile.nombre;
             document.getElementById('profileEmail').textContent = profile.email || 'No especificado';
             
-            // --- LÓGICA MEJORADA DE AVATAR ---
+            // --- LÓGICA MEJORADA DE AVATAR (CORREGIDA PARA QUE SEA REDONDA) ---
             const avatarContainer = document.querySelector('.profile-avatar-large');
             // Limpiamos contenido previo
             avatarContainer.innerHTML = '';
 
             if (profile.avatar_url) {
-                // Si tiene foto, ponemos la imagen
-                avatarContainer.innerHTML = `<img src="${profile.avatar_url}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+                // Si tiene foto, ponemos la imagen y LE AGREGAMOS border-radius: 50%
+                avatarContainer.innerHTML = `<img src="${profile.avatar_url}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
                 avatarContainer.style.backgroundColor = 'transparent';
                 avatarContainer.style.border = '4px solid white';
             } else {
