@@ -18,10 +18,27 @@ async function loadProfileData() {
         if (data.success && data.data.profile) {
             const profile = data.data.profile;
             
-            // Actualizar información del perfil
+            // 1. Actualizar información del perfil
             document.getElementById('profileName').textContent = profile.nombre;
             document.getElementById('profileEmail').textContent = profile.email || 'No especificado';
-            document.getElementById('profileInitial').textContent = profile.nombre.charAt(0).toUpperCase();
+            
+            // --- LÓGICA MEJORADA DE AVATAR ---
+            const avatarContainer = document.querySelector('.profile-avatar-large');
+            // Limpiamos contenido previo
+            avatarContainer.innerHTML = '';
+
+            if (profile.avatar_url) {
+                // Si tiene foto, ponemos la imagen
+                avatarContainer.innerHTML = `<img src="${profile.avatar_url}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+                avatarContainer.style.backgroundColor = 'transparent';
+                avatarContainer.style.border = '4px solid white';
+            } else {
+                // Si no, ponemos la letra inicial (Lógica original)
+                avatarContainer.innerHTML = `<span id="profileInitial">${profile.nombre.charAt(0).toUpperCase()}</span>`;
+                avatarContainer.style.backgroundColor = ''; // Color por defecto
+                avatarContainer.style.border = '4px solid white';
+            }
+            // -------------------------------
             
             const typeLabels = {
                 'admin': 'Administrador',
@@ -30,19 +47,19 @@ async function loadProfileData() {
             };
             document.getElementById('profileType').textContent = typeLabels[profile.tipo] || profile.tipo;
             
-            // Actualizar estadísticas
+            // 2. Actualizar estadísticas
             document.getElementById('userReportsCount').textContent = profile.total_reportes || 0;
             document.getElementById('userLikesReceived').textContent = profile.total_likes || 0;
             document.getElementById('userViews').textContent = profile.total_vistas || 0;
             
-            // Pre-llenar formulario
+            // 3. Pre-llenar formulario de edición
             document.getElementById('editName').value = profile.nombre;
             document.getElementById('editEmail').value = profile.email || '';
             document.getElementById('editUsername').value = profile.username || '';
             document.getElementById('editLocation').value = profile.ubicacion || '';
             document.getElementById('editBio').value = profile.biografia || '';
             
-            // Cargar actividad
+            // 4. Cargar actividad
             loadUserActivity();
         }
     } catch (error) {
@@ -81,7 +98,7 @@ function cancelEditProfile() {
     // Ocultar acciones
     document.getElementById('profileFormActions').style.display = 'none';
     
-    // Recargar datos originales
+    // Recargar datos originales para deshacer cambios no guardados
     loadProfileData();
 }
 
@@ -113,7 +130,7 @@ async function saveProfile(event) {
             user.name = profileData.name;
             localStorage.setItem('sigmaforo_user', JSON.stringify(user));
             
-            // Recargar datos
+            // Recargar datos visuales
             loadProfileData();
             
             // Deshabilitar edición

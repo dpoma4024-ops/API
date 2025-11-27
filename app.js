@@ -484,13 +484,28 @@ function createReportCard(report) {
   const canDelete = isOwnReport && canDeleteOwnReports();
   const canModerate = isAdmin();
 
+  // --- NUEVA LÓGICA DE AVATAR ---
+  // Verificamos si el reporte trae la foto del autor (autor_avatar)
+  let avatarHTML;
+  // Nota: En reports.php le pusimos alias 'autor_avatar' a la columna u.avatar_url
+  if (report.autor_avatar) {
+      // Si hay foto: Ponemos imagen y quitamos el fondo de color
+      avatarHTML = `<img src="${report.autor_avatar}" alt="${report.autor_nombre}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+  } else {
+      // Si no hay foto: Ponemos la inicial
+      avatarHTML = `<span>${report.autor_nombre.charAt(0).toUpperCase()}</span>`;
+  }
+  // -----------------------------
+
   return `
     <article class="report-card" id="report-${report.id}" onclick="openReportDetail(${report.id}, event)" style="cursor: pointer;">
       <div class="report-header">
         <div class="report-author">
-          <div class="avatar">
-            <span>${report.autor_nombre.charAt(0)}</span>
+          
+          <div class="avatar" style="${report.autor_avatar ? 'background-color: transparent;' : ''}">
+            ${avatarHTML}
           </div>
+
           <div class="author-info">
             <div class="author-name">${report.autor_nombre}</div>
             <div class="author-username">@${report.autor_username}</div>
