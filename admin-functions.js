@@ -50,12 +50,28 @@ async function loadAdminDashboard() {
 
 async function loadUsersCount() {
     try {
+        // Primero intentar con el endpoint de admin
         const response = await apiRequest('admin/users.php?action=count');
         if (response.success) {
             document.getElementById('totalUsersAdmin').textContent = response.data.total || 0;
         }
     } catch (error) {
-        document.getElementById('totalUsersAdmin').textContent = '0';
+        // Fallback: contar desde la lista de reportes
+        try {
+            const reportsResponse = await apiRequest('reports.php?action=list&limit=100');
+            if (reportsResponse.success) {
+                const uniqueUsers = new Set();
+                reportsResponse.data.reports.forEach(report => {
+                    uniqueUsers.add(report.user_id);
+                });
+                document.getElementById('totalUsersAdmin').textContent = uniqueUsers.size;
+            } else {
+                document.getElementById('totalUsersAdmin').textContent = '0';
+            }
+        } catch (fallbackError) {
+            console.error('Error en fallback de usuarios:', fallbackError);
+            document.getElementById('totalUsersAdmin').textContent = '0';
+        }
     }
 }
 
@@ -980,6 +996,10 @@ async function loadAdminStats() {
             loadStatsTopCategories(stats.by_category || []);
             await loadStatsTopUsers();
             loadStatusDistribution(stats.by_status || {});
+            
+            // Load charts
+            createCategoryChart(stats.by_category || []);
+            createStatusChart(stats.by_status || {});
         }
         
         // Load users stats
@@ -1000,9 +1020,29 @@ async function loadUsersStatsCount() {
             document.getElementById('statsEngagementTotal').textContent = response.data.engagement || 0;
         }
     } catch (error) {
-        document.getElementById('statsUsersTotal').textContent = '0';
-        document.getElementById('statsUsersActive').textContent = '0';
-        document.getElementById('statsEngagementTotal').textContent = '0';
+        // Fallback: contar desde reportes
+        try {
+            const reportsResponse = await apiRequest('reports.php?action=list&limit=100');
+            if (reportsResponse.success) {
+                const uniqueUsers = new Set();
+                let totalLikes = 0;
+                reportsResponse.data.reports.forEach(report => {
+                    uniqueUsers.add(report.user_id);
+                    totalLikes += report.likes || 0;
+                });
+                document.getElementById('statsUsersTotal').textContent = uniqueUsers.size;
+                document.getElementById('statsUsersActive').textContent = uniqueUsers.size;
+                document.getElementById('statsEngagementTotal').textContent = totalLikes;
+            } else {
+                document.getElementById('statsUsersTotal').textContent = '0';
+                document.getElementById('statsUsersActive').textContent = '0';
+                document.getElementById('statsEngagementTotal').textContent = '0';
+            }
+        } catch (fallbackError) {
+            document.getElementById('statsUsersTotal').textContent = '0';
+            document.getElementById('statsUsersActive').textContent = '0';
+            document.getElementById('statsEngagementTotal').textContent = '0';
+        }
     }
 }
 
@@ -1175,4 +1215,151 @@ function getCategoryIcon(category) {
         medio_ambiente: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8c0 3-2 5-5 5s-5-2-5-5 2-5 5-5 5 2 5 5z"></path><path d="M12 13c-3 0-5 2-5 4v2h10v-2c0-2-2-4-5-4z"></path></svg>'
     };
     return icons[category] || icons.seguridad;
+}
+
+// ========================================
+// GRÁFICOS CON CHART.JS
+// ========================================
+
+let categoryChartInstance = null;
+let statusChartInstance = null;
+
+function createCategoryChart(categories) {
+    const canvas = document.getElementById('categoryChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Destruir gráfico anterior si existe
+    if (categoryChartInstance) {
+        categoryChartInstance.destroy();
+    }
+    
+    if (!categories || categories.length === 0) {
+        return;
+    }
+    
+    const labels = categories.map(cat => getCategoryLabel(cat.categoria));
+    const data = categories.map(cat => cat.total);
+    const colors = categories.map(cat => getCategoryColor(cat.categoria));
+    
+    categoryChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderColor: '#1a1a1a',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#9ca3af',
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#1f2937',
+                    titleColor: '#ffffff',
+                    bodyColor: '#9ca3af',
+                    borderColor: '#374151',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createStatusChart(byStatus) {
+    const canvas = document.getElementById('statusChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Destruir gráfico anterior si existe
+    if (statusChartInstance) {
+        statusChartInstance.destroy();
+    }
+    
+    const statuses = [
+        { key: 'pendiente', label: 'Pendiente', color: '#f59e0b' },
+        { key: 'en_revision', label: 'En Revisión', color: '#3b82f6' },
+        { key: 'en_proceso', label: 'En Proceso', color: '#a855f7' },
+        { key: 'resuelto', label: 'Resuelto', color: '#22c55e' }
+    ];
+    
+    const labels = statuses.map(s => s.label);
+    const data = statuses.map(s => byStatus[s.key] || 0);
+    const colors = statuses.map(s => s.color);
+    
+    statusChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Cantidad de Reportes',
+                data: data,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1f2937',
+                    titleColor: '#ffffff',
+                    bodyColor: '#9ca3af',
+                    borderColor: '#374151',
+                    borderWidth: 1,
+                    padding: 12
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#9ca3af',
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: '#374151'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#9ca3af'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
 }

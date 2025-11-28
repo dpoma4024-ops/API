@@ -924,6 +924,39 @@
     color: var(--accent-blue);
 }
 
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.chart-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.chart-header {
+    margin-bottom: 20px;
+}
+
+.chart-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+
 /* Detailed Stats */
 .detailed-stats-grid {
     display: grid;
@@ -1114,6 +1147,10 @@
     .resolution-stats {
         grid-template-columns: 1fr;
     }
+
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1160,6 +1197,16 @@
     .page-header {
         flex-direction: column;
         align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .page-header h1 {
+        font-size: 24px;
+        margin-bottom: 4px;
+    }
+
+    .page-description {
+        font-size: 14px;
     }
 
     .header-stats {
@@ -1169,11 +1216,42 @@
 
     .admin-quick-stats {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 
     .quick-stat-card {
         flex-direction: column;
         text-align: center;
+        padding: 16px;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+    }
+
+    /* Botones más pequeños en móviles */
+    .btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .admin-action-btn {
+        padding: 12px;
+        font-size: 14px;
     }
 
     .filters-row {
@@ -1237,20 +1315,37 @@
 }
 
 @media (max-width: 480px) {
+    .page-header h1 {
+        font-size: 20px;
+    }
+
     .admin-quick-stats {
         grid-template-columns: 1fr;
     }
 
+    .quick-stat-card {
+        padding: 12px;
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+    }
+
     .stat-value {
-        font-size: 24px;
+        font-size: 20px;
     }
 
     .stat-label {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .mini-stat-value {
-        font-size: 20px;
+        font-size: 18px;
+    }
+
+    .mini-stat-label {
+        font-size: 11px;
     }
 
     .admin-table {
@@ -1262,11 +1357,40 @@
         gap: 4px;
     }
 
-    .btn-icon {
-        width: 100%;
+    /* Botones aún más pequeños en móviles pequeños */
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .admin-action-btn {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .nav-link {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .stat-overview-value {
+        font-size: 28px;
+    }
+
+    .chart-container {
+        height: 250px;
     }
 
     .resolution-stats {
         grid-template-columns: 1fr;
+    }
+
+    .btn-icon {
+        width: 100%;
     }
 }
