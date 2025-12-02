@@ -153,6 +153,76 @@
         </div>
     </div>
 
+    <!-- Modal Crear Reporte (MODIFICADO) -->
+    <div id="createReportModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Crear Nuevo Reporte</h2>
+                <button class="close-btn" onclick="closeCreateReportModal()">&times;</button>
+            </div>
+            <form onsubmit="handleCreateReport(event)">
+                <div class="form-group">
+                    <label>Categoría del Incidente</label>
+                    <select name="category" id="reportCategory" required>
+                        <option value="seguridad"> Seguridad</option>
+                        <option value="infraestructura"> Infraestructura</option>
+                        <option value="vias"> Vías</option>
+                        <option value="servicios"> Servicios</option>
+                        <option value="medio_ambiente"> Medio Ambiente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Título del Incidente</label>
+                    <input type="text" name="title" required placeholder="Ej: Semáforo dañado en Av. Principal">
+                </div>
+
+                <div class="form-group" style="position: relative;">
+                    <label>Descripción</label>
+                    <textarea 
+                        name="description" 
+                        id="reportDescription"
+                        required 
+                        placeholder="Describe el incidente... Usa #hashtags para categorizarlo mejor. Ej: #TacnaSegura"
+                        rows="4"
+                    ></textarea>
+                    <div class="form-hint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                         Tip: Usa hashtags (#) para que tu reporte sea más fácil de encontrar
+                    </div>
+                    <div id="hashtagSuggestions" class="hashtag-suggestions"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ubicación</label>
+                    <input type="text" id="locationInput" name="location" required placeholder="Selecciona en el mapa" readonly>
+                    <div id="mapPicker" class="map-picker"></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="detectLocation()">
+                        📍 Detectar mi ubicación
+                    </button>
+                </div>
+                <!-- MODIFICADO: Mejorar input de imagen -->
+                <div class="form-group">
+                    <label>Imagen (opcional)</label>
+                    <input 
+                        type="file" 
+                        name="image" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif"
+                        onchange="previewImage(this)"
+                        style="display: block; padding: 8px; width: 100%; background-color: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px; cursor: pointer;"
+                    >
+                    <div class="form-hint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
+                    </div>
+                    <!-- NUEVO: Contenedor para preview de imagen -->
+                    <div id="imagePreview" style="margin-top: 12px; display: none;"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeCreateReportModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Publicar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toastContainer"></div>
 
@@ -362,10 +432,7 @@
             loadAlerts();
             loadTrending(5);
             loadTrending();
-            
-            // Obtener número de reportes seguidos (esto vendría de zonas_seguidas)
-            // Por ahora ponemos un valor mock
-            document.getElementById('followedReports').textContent = '3';
+            document.getElementById('followedReports').textContent = '0';
         });
         
         // Recargar notificaciones cada 30 segundos
