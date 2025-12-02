@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle del Reporte - SigmaForo</title>
+  
+  <!-- Estilos principales -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Estilos específicos de reporte-detalle -->
+  <link rel="stylesheet" href="reporte-detalle.css">
+  
+  <!-- Leaflet para mapas -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <!-- ========================================
+       NAVBAR (igual que dashboard.html)
+       ======================================== -->
+  <nav class="navbar">
+    <div class="nav-content">
+      <div class="nav-left">
+        <a href="dashboard.html" class="logo">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>SigmaForo</span>
+        </a>
+      </div>
+
+      <div class="nav-center">
+        <a href="dashboard.html" class="nav-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          </svg>
+          Inicio
+        </a>
+        <a href="alertas.html" class="nav-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          Alertas
+        </a>
+        <a href="mapa.html" class="nav-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          Mapa
+        </a>
+      </div>
+
+      <div class="nav-right">
+        <button class="btn btn-primary" onclick="openCreateReportModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Reportar
+        </button>
+        <div class="notification-wrapper">
+          <button class="notification-btn" onclick="toggleNotifications()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notification-badge">3</span>
+          </button>
+          <div id="notificationDropdown" class="notification-dropdown">
+            <div class="notification-header">
+              <h3>Notificaciones</h3>
+              <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+            </div>
+            <div id="notificationList" class="notification-list"></div>
+          </div>
+        </div>
+        <div class="user-menu">
+          <button class="user-btn" onclick="toggleUserMenu()">
+            <div class="avatar">
+              <span id="userInitial">U</span>
+            </div>
+            <span id="userName">Usuario</span>
+          </button>
+          <div id="userDropdown" class="dropdown-menu">
+            <a href="perfil.html" class="dropdown-item" id="menuPerfil">Mi Perfil</a>
+            <a href="mis-reportes.html" class="dropdown-item" id="menuReportes">Mis Reportes</a>
+            <a href="configuracion.html" class="dropdown-item" id="menuConfig">Configuración</a>
+            <hr class="dropdown-divider">
+            <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================
+       CONTENIDO PRINCIPAL
+       ======================================== -->
+  <div class="container">
+    <div class="report-detail-container">
+      
+      <!-- ========================================
+           COLUMNA PRINCIPAL - REPORTE
+           ======================================== -->
+      <div class="report-main">
+        
+        <!-- Header del Reporte -->
+        <div class="report-detail-header">
+          <div class="report-detail-meta">
+            <div class="report-detail-author">
+              <div class="report-detail-avatar" id="reportDetailAvatar">U</div>
+              <div class="report-detail-author-info">
+                <h2 id="reportDetailAuthorName">Cargando...</h2>
+                <p><span id="reportDetailAuthorUsername">@username</span> • <span id="reportDetailTime">Hace 2 horas</span></p>
+              </div>
+            </div>
+            <div class="report-detail-actions">
+              <button class="btn-icon" onclick="window.history.back()" title="Volver">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <button class="btn-icon" id="reportMenuBtn" title="Opciones">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="1"></circle>
+                  <circle cx="12" cy="5" r="1"></circle>
+                  <circle cx="12" cy="19" r="1"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="report-detail-badge-group">
+            <span class="category-badge" id="reportDetailCategory"></span>
+            <span class="status-badge" id="reportDetailStatus"></span>
+          </div>
+
+          <h1 class="report-detail-title" id="reportDetailTitle">Cargando título...</h1>
+          <p class="report-detail-description" id="reportDetailDescription">Cargando descripción...</p>
+        </div>
+
+        <!-- Imagen del Reporte -->
+        <div id="reportDetailImageContainer"></div>
+
+        <!-- Sección de Ubicación -->
+        <div class="report-detail-location-section">
+          <div class="report-detail-location-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <h3>Ubicación</h3>
+          </div>
+          <p class="report-detail-location-text" id="reportDetailLocation">Cargando ubicación...</p>
+          <div id="reportDetailMap"></div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="report-detail-stats">
+          <div class="report-stat-item" id="viewsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span id="reportDetailViews">0</span>
+          </div>
+          <div class="report-stat-item" id="likesBtn" onclick="handleDetailLike()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+            </svg>
+            <span id="reportDetailLikes">0</span>
+          </div>
+          <div class="report-stat-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span id="reportDetailCommentsCount">0</span>
+          </div>
+          <div class="report-stat-item" onclick="openShareModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Sección de Comentarios -->
+        <div class="report-detail-comments">
+          <div class="comments-header">
+            <h3>Comentarios (<span id="commentsCount">0</span>)</h3>
+          </div>
+
+          <!-- Formulario de Comentario -->
+          <div class="comment-form" id="commentFormContainer">
+            <textarea 
+              id="commentInput" 
+              placeholder="Escribe tu comentario..."
+              maxlength="1000"
+              oninput="updateCharCount()"
+            ></textarea>
+            <div class="comment-form-actions">
+              <span class="comment-char-count"><span id="charCount">0</span>/1000</span>
+              <button class="btn btn-primary" onclick="submitComment()">
+                Publicar Comentario
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista de Comentarios -->
+          <div class="comments-list" id="commentsList">
+            <!-- Los comentarios se cargarán dinámicamente -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================
+           SIDEBAR - ACCIONES Y INFO
+           ======================================== -->
+      <div class="report-sidebar">
+        
+        <!-- Botón de Seguir -->
+        <button class="follow-report-btn" id="followBtn" onclick="toggleFollow()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span id="followBtnText">Seguir Reporte</span>
+        </button>
+
+        <!-- Timeline de Estado -->
+        <div class="sidebar-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Historial de Estado
+          </h3>
+          <div class="status-timeline" id="statusTimeline">
+            <!-- El timeline se cargará dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Compartir -->
+        <div class="sidebar-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg>
+            Compartir
+          </h3>
+          <div class="share-buttons">
+            <button class="share-btn" onclick="copyReportLink()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              Copiar enlace
+            </button>
+            <button class="share-btn" onclick="shareOnTwitter()">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+              </svg>
+              Compartir en X
+            </button>
+            <button class="share-btn" onclick="shareOnWhatsApp()">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path>
+              </svg>
+              Compartir en WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <!-- Reportes Cercanos -->
+        <div class="sidebar-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            Reportes Cercanos
+          </h3>
+          <div class="nearby-reports" id="nearbyReports">
+            <!-- Los reportes cercanos se cargarán dinámicamente -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+  <script src="reporte-detalle.js"></script>
+  <script src="notifications.js"></script>
+</body>
+</html>

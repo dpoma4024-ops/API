@@ -1,0 +1,362 @@
+/* ========================================
+   MEJORAS DE RESPONSIVIDAD GENERAL
+   ======================================== */
+
+/* Mejoras para pantallas pequeñas */
+@media (max-width: 640px) {
+    /* Navbar mejorado */
+    .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .nav-content {
+        padding: 8px 16px;
+        flex-wrap: wrap;
+    }
+
+    .nav-left .logo span {
+        display: none;
+    }
+
+    .nav-center {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        border-top: 1px solid var(--border-color);
+        padding-top: 8px;
+        margin-top: 8px;
+    }
+
+    .nav-link {
+        padding: 8px 12px;
+        font-size: 13px;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .nav-link svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .nav-link span {
+        font-size: 11px;
+    }
+
+    /* Botones del nav-right */
+    .nav-right {
+        gap: 8px;
+    }
+
+    .nav-right .btn-primary {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .nav-right .btn-primary span {
+        display: none;
+    }
+
+    .user-btn span {
+        display: none;
+    }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+}
+
+/* Mejoras para tablets */
+@media (max-width: 1024px) and (min-width: 641px) {
+    .nav-content {
+        padding: 10px 20px;
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+        margin-top: 24px;
+    }
+
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Container responsivo mejorado */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 12px;
+    }
+}
+
+/* Cards responsivos */
+.report-card,
+.admin-card,
+.settings-card,
+.trending-card,
+.stats-card {
+    margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+    .report-card,
+    .admin-card,
+    .settings-card,
+    .trending-card,
+    .stats-card {
+        border-radius: 12px;
+        padding: 16px;
+    }
+}
+
+/* Modales responsivos */
+.modal-content {
+    max-width: min(480px, 90vw);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content.modal-large {
+    max-width: min(800px, 95vw);
+}
+
+@media (max-width: 640px) {
+    .modal-content {
+        max-width: 95vw;
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px; /* Evita zoom automático en iOS */
+    }
+}
+
+/* Tablas responsivas */
+@media (max-width: 1024px) {
+    .hide-mobile {
+        display: none !important;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table {
+        min-width: 600px;
+    }
+}
+
+/* Notificaciones responsivas */
+.notification-dropdown {
+    min-width: min(380px, 95vw);
+    max-height: min(500px, 70vh);
+}
+
+@media (max-width: 640px) {
+    .notification-dropdown {
+        right: -10px;
+        left: auto;
+        min-width: 90vw;
+    }
+
+    .toast {
+        min-width: auto;
+        width: calc(100% - 24px);
+        margin: 0 12px;
+    }
+
+    #toastContainer {
+        right: 0;
+        left: 0;
+        bottom: 16px;
+    }
+}
+
+/* Mejoras de espaciado */
+.page-header {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+    .page-header h1 {
+        font-size: 24px;
+    }
+
+    .page-description {
+        font-size: 14px;
+    }
+}
+
+/* Grid responsivo mejorado */
+.admin-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .admin-quick-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Botones responsivos */
+@media (max-width: 640px) {
+    .btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Search bar responsivo */
+.search-bar {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+    .search-bar {
+        padding: 10px 16px;
+    }
+
+    .search-bar input {
+        font-size: 14px;
+    }
+}
+
+/* Mejoras de accesibilidad táctil */
+@media (hover: none) and (pointer: coarse) {
+    button,
+    .btn,
+    .nav-link,
+    .stat-btn,
+    .filter-btn,
+    .tab-btn {
+        min-height: 44px; /* Tamaño mínimo recomendado para táctil */
+    }
+
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Prevenir zoom en inputs en iOS */
+@supports (-webkit-touch-callout: none) {
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}
+
+/* Animaciones suaves */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Scroll suave */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Mejoras para landscape mode en móviles */
+@media (max-height: 500px) and (orientation: landscape) {
+    .modal-content {
+        max-height: 85vh;
+    }
+
+    .navbar {
+        position: relative;
+    }
+
+    .nav-content {
+        flex-wrap: nowrap;
+    }
+
+    .nav-center {
+        order: initial;
+        width: auto;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+}
+
+/* Fix para pantallas muy pequeñas */
+@media (max-width: 360px) {
+    .container {
+        padding: 0 8px;
+    }
+
+    .report-card,
+    .admin-card {
+        padding: 12px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+/* Mejoras para pantallas muy anchas */
+@media (min-width: 1920px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    .modal-content.modal-large {
+        max-width: 1000px;
+    }
+}
