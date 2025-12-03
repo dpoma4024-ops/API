@@ -184,10 +184,10 @@ function openTrendingModal() {
         
         <div class="mobile-trending-tabs">
           <button class="mobile-trending-tab active" onclick="switchTrendingTab(this, 'trending')">
-            🔥 Tendencias
+            Tendencias
           </button>
           <button class="mobile-trending-tab" onclick="switchTrendingTab(this, 'stats')">
-            📊 Estadísticas
+            Estadísticas
           </button>
         </div>
         
