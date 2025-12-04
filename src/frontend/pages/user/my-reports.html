@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Reportes - SigmaForo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/components/delete-button.css">
+    <link rel="stylesheet" href="../../css/responsive/improvements.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../../css/responsive/mobile.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-left">
+                <a href="dashboard.html" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>SigmaForo</span>
+                </a>
+            </div>
+
+            <div class="nav-center">
+                <a href="dashboard.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    Inicio
+                </a>
+                <a href="alertas.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    Alertas
+                </a>
+                <a href="mapa.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Mapa
+                </a>
+            </div>
+
+            <div class="nav-right">
+                <button class="btn btn-primary" onclick="openCreateReportModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Reportar
+                </button>
+                <div class="notification-wrapper">
+                    <button class="notification-btn" onclick="toggleNotifications()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h3>Notificaciones</h3>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+                        </div>
+                        <div id="notificationList" class="notification-list"></div>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-btn" onclick="toggleUserMenu()">
+                        <div class="avatar">
+                            <span id="userInitial">U</span>
+                        </div>
+                        <span id="userName">Usuario</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu">
+                        <a href="perfil.html" class="dropdown-item">Mi Perfil</a>
+                        <a href="mis-reportes.html" class="dropdown-item">Mis Reportes</a>
+                        <a href="configuracion.html" class="dropdown-item">Configuración</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <main class="feed">
+                <div class="page-header">
+                    <h1>Mis Reportes</h1>
+                    <p class="page-description">Todos los incidentes que has reportado</p>
+                </div>
+
+                <!-- Filters -->
+                <div class="my-reports-filters">
+                    <button class="filter-chip active" data-status="all" onclick="filterMyReports('all')">
+                        Todos
+                        <span class="tab-count" id="countAllReports">0</span>
+                    </button>
+                    <button class="filter-chip" data-status="pendiente" onclick="filterMyReports('pendiente')">
+                        Pendiente
+                        <span class="tab-count" id="countPendiente">0</span>
+                    </button>
+                    <button class="filter-chip" data-status="en_revision" onclick="filterMyReports('en_revision')">
+                        En Revisión
+                        <span class="tab-count" id="countRevision">0</span>
+                    </button>
+                    <button class="filter-chip" data-status="en_proceso" onclick="filterMyReports('en_proceso')">
+                        En Proceso
+                        <span class="tab-count" id="countProceso">0</span>
+                    </button>
+                    <button class="filter-chip" data-status="resuelto" onclick="filterMyReports('resuelto')">
+                        Resuelto
+                        <span class="tab-count" id="countResuelto">0</span>
+                    </button>
+                </div>
+
+                <!-- Reports List -->
+                <div id="myReportsList">
+                    <!-- Los reportes se cargarán dinámicamente -->
+                </div>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="stats-card">
+                    <h3>Estadísticas de Mis Reportes</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Reportes</span>
+                        <span class="stat-value" id="totalMyReports">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Pendientes</span>
+                        <span class="stat-value" id="pendingReports">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">En Proceso</span>
+                        <span class="stat-value" id="processingReports">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Resueltos</span>
+                        <span class="stat-value" id="resolvedReports">0</span>
+                    </div>
+                </div>
+
+                <div class="trending-card">
+                    <h3>Rendimiento</h3>
+                    <div class="performance-item">
+                        <span class="performance-label">Total Visualizaciones</span>
+                        <span class="performance-value" id="totalViews">0</span>
+                    </div>
+                    <div class="performance-item">
+                        <span class="performance-label">Total Likes</span>
+                        <span class="performance-value" id="totalLikes">0</span>
+                    </div>
+                    <div class="performance-item">
+                        <span class="performance-label">Promedio de Engagement</span>
+                        <span class="performance-value" id="avgEngagement">0%</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+
+    <!-- Modal Crear Reporte (MODIFICADO) -->
+    <div id="createReportModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Crear Nuevo Reporte</h2>
+                <button class="close-btn" onclick="closeCreateReportModal()">&times;</button>
+            </div>
+            <form onsubmit="handleCreateReport(event)">
+                <div class="form-group">
+                    <label>Categoría del Incidente</label>
+                    <select name="category" id="reportCategory" required>
+                        <option value="seguridad"> Seguridad</option>
+                        <option value="infraestructura"> Infraestructura</option>
+                        <option value="vias"> Vías</option>
+                        <option value="servicios"> Servicios</option>
+                        <option value="medio_ambiente"> Medio Ambiente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Título del Incidente</label>
+                    <input type="text" name="title" required placeholder="Ej: Semáforo dañado en Av. Principal">
+                </div>
+
+                <div class="form-group" style="position: relative;">
+                    <label>Descripción</label>
+                    <textarea 
+                        name="description" 
+                        id="reportDescription"
+                        required 
+                        placeholder="Describe el incidente... Usa #hashtags para categorizarlo mejor. Ej: #TacnaSegura"
+                        rows="4"
+                    ></textarea>
+                    <div class="form-hint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                         Tip: Usa hashtags (#) para que tu reporte sea más fácil de encontrar
+                    </div>
+                    <div id="hashtagSuggestions" class="hashtag-suggestions"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ubicación</label>
+                    <input type="text" id="locationInput" name="location" required placeholder="Selecciona en el mapa" readonly>
+                    <div id="mapPicker" class="map-picker"></div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="detectLocation()">
+                        📍 Detectar mi ubicación
+                    </button>
+                </div>
+                <!-- MODIFICADO: Mejorar input de imagen -->
+                <div class="form-group">
+                    <label>Imagen (opcional)</label>
+                    <input 
+                        type="file" 
+                        name="image" 
+                        accept="image/jpeg,image/jpg,image/png,image/gif"
+                        onchange="previewImage(this)"
+                        style="display: block; padding: 8px; width: 100%; background-color: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px; cursor: pointer;"
+                    >
+                    <div class="form-hint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
+                    </div>
+                    <!-- NUEVO: Contenedor para preview de imagen -->
+                    <div id="imagePreview" style="margin-top: 12px; display: none;"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeCreateReportModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Publicar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="../../js/core/app.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="../../js/modules/my-reports.js"></script>
+    <script src="../../js/modules/notifications.js"></script>
+    <script src="../../js/modules/trending.js"></script>
+    <script>
+        if (!isAuthenticated()) {
+            window.location.href = 'index.html';
+        }
+        
+        const user = getCurrentUser();
+        if (user && user.type === 'anonimo') {
+            showToast('Los usuarios anónimos no pueden ver sus reportes', 'warning');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 2000);
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            loadMyReports();
+            loadNotifications();
+        });
+    </script>
+    <script src="../../js/modules/mobile.js"></script>
+</body>
+</html>
+
+
+

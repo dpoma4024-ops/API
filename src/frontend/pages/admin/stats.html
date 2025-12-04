@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - SigmaForo Admin</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/pages/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navbar Admin -->
+    <nav class="navbar admin-navbar">
+        <div class="nav-content">
+            <div class="nav-left">
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="admin-dashboard.html" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <span class="logo-text">SigmaForo Admin</span>
+                </a>
+            </div>
+
+            <div class="nav-center" id="navCenter">
+                <a href="admin-dashboard.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="admin-reports.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>Reportes</span>
+                </a>
+                <a href="admin-users.html" class="nav-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="admin-stats.html" class="nav-link active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span>Estadísticas</span>
+                </a>
+            </div>
+
+            <div class="nav-right">
+                <div class="notification-wrapper">
+                    <button class="notification-btn" onclick="toggleNotifications()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-badge" id="notifBadge">0</span>
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h3>Notificaciones</h3>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">Marcar todas como leídas</button>
+                        </div>
+                        <div id="notificationList" class="notification-list"></div>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-btn" onclick="toggleUserMenu()">
+                        <div class="avatar admin-avatar">
+                            <span id="userInitial">A</span>
+                        </div>
+                        <span id="userName" class="user-name-text">Administrador</span>
+                    </button>
+                    <div id="userDropdown" class="dropdown-menu">
+                        <a href="index.html" class="dropdown-item">Ver sitio</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" onclick="logout()">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="admin-stats-layout">
+            <div class="page-header">
+                <div>
+                    <h1>Estadísticas de la Plataforma</h1>
+                    <p class="page-description">Análisis detallado de métricas y rendimiento</p>
+                </div>
+                <div class="period-selector">
+                    <select id="periodFilter" onchange="updateStatsPeriod()">
+                        <option value="today">Hoy</option>
+                        <option value="week" selected>Última semana</option>
+                        <option value="month">Último mes</option>
+                        <option value="year">Último año</option>
+                        <option value="all">Todo el tiempo</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Overview Stats -->
+            <div class="stats-overview-grid">
+                <div class="stat-overview-card">
+                    <div class="stat-overview-header">
+                        <div class="stat-overview-icon" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div class="stat-overview-trend up">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            </svg>
+                            <span id="reportsTrend">+0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-overview-value" id="statsReportsTotal">0</div>
+                    <div class="stat-overview-label">Total Reportes</div>
+                    <div class="stat-overview-footer">
+                        <span id="statsReportsToday">0</span> nuevos hoy
+                    </div>
+                </div>
+
+                <div class="stat-overview-card">
+                    <div class="stat-overview-header">
+                        <div class="stat-overview-icon" style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="stat-overview-trend up">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            </svg>
+                            <span id="usersTrend">+0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-overview-value" id="statsUsersTotal">0</div>
+                    <div class="stat-overview-label">Total Usuarios</div>
+                    <div class="stat-overview-footer">
+                        <span id="statsUsersActive">0</span> activos
+                    </div>
+                </div>
+
+                <div class="stat-overview-card">
+                    <div class="stat-overview-header">
+                        <div class="stat-overview-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-overview-trend down">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                            </svg>
+                            <span id="pendingTrend">-0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-overview-value" id="statsReportsPending">0</div>
+                    <div class="stat-overview-label">Reportes Pendientes</div>
+                    <div class="stat-overview-footer">
+                        Requieren atención
+                    </div>
+                </div>
+
+                <div class="stat-overview-card">
+                    <div class="stat-overview-header">
+                        <div class="stat-overview-icon" style="background-color: rgba(168, 85, 247, 0.1); color: #a855f7;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-overview-trend up">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            </svg>
+                            <span id="engagementTrend">+0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-overview-value" id="statsEngagementTotal">0</div>
+                    <div class="stat-overview-label">Total Engagement</div>
+                    <div class="stat-overview-footer">
+                        Likes + Comentarios
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Reportes por Categoría</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Reportes por Estado</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Stats Grid -->
+            <div class="detailed-stats-grid">
+                <!-- Top Categories -->
+                <div class="detailed-stat-card">
+                    <h3>Categorías Más Reportadas</h3>
+                    <div class="ranking-list" id="topCategoriesList">
+                        <div class="loading-spinner">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- Top Users -->
+                <div class="detailed-stat-card">
+                    <h3>Usuarios Más Activos</h3>
+                    <div class="ranking-list" id="topUsersList">
+                        <div class="loading-spinner">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- Status Distribution -->
+                <div class="detailed-stat-card">
+                    <h3>Distribución por Estado</h3>
+                    <div class="ranking-list" id="statusDistribution">
+                        <div class="loading-spinner">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- Resolution Stats -->
+                <div class="detailed-stat-card">
+                    <h3>Métricas de Resolución</h3>
+                    <div class="resolution-stats">
+                        <div class="resolution-item">
+                            <div class="resolution-label">Resueltos</div>
+                            <div class="resolution-value" id="resolvedCount">0</div>
+                        </div>
+                        <div class="resolution-item">
+                            <div class="resolution-label">En Proceso</div>
+                            <div class="resolution-value" id="inProcessCount">0</div>
+                        </div>
+                        <div class="resolution-item">
+                            <div class="resolution-label">Pendientes</div>
+                            <div class="resolution-value" id="pendingCount">0</div>
+                        </div>
+                        <div class="resolution-item">
+                            <div class="resolution-label">Tasa Resolución</div>
+                            <div class="resolution-value" id="resolutionRate">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-card">
+                <div class="export-header">
+                    <div>
+                        <h3>Exportar Datos</h3>
+                        <p>Descarga reportes completos en diferentes formatos</p>
+                    </div>
+                </div>
+                <div class="export-actions">
+                    <button class="btn btn-outline" onclick="exportData('csv')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Exportar CSV
+                    </button>
+                    <button class="btn btn-outline" onclick="exportData('json')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Exportar JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="../../js/core/app.js"></script>
+    <script src="../../js/modules/admin.js"></script>
+    <script>
+        if (!isAuthenticated() || !isAdmin()) {
+            showToast('Acceso denegado: Se requieren permisos de administrador', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            loadAdminStats();
+            loadNotifications();
+        });
+
+        function toggleMobileMenu() {
+            const navCenter = document.getElementById('navCenter');
+            navCenter.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
+
