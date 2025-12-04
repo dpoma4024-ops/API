@@ -1,0 +1,18 @@
+# Optional: redirect root requests to the migrated public folder.
+# If your hosting uses Apache and you can place an .htaccess file, this will
+# redirect the site root to `src/frontend/public/`.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If request already starts with /src/frontend/public/ do nothing
+    RewriteCond %{REQUEST_URI} !^/src/frontend/public/
+
+    # Redirect root URL to the public folder
+    RewriteRule ^$ /src/frontend/public/ [R=302,L]
+
+    # For any other request that doesn't map directly, try serving from public
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /src/frontend/public/$1 [L]
+</IfModule>
