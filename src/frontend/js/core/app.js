@@ -5,7 +5,9 @@
 // CONFIGURATION
 // ========================================
 
-const API_BASE_URL = 'api';
+// Point to the backend API folder. Using an absolute path ensures fetch
+// requests reach the PHP endpoints after the repository was reorganized.
+const API_BASE_URL = '/src/backend/api';
 
 if (typeof L !== 'undefined') {
   delete L.Icon.Default.prototype._getIconUrl;
