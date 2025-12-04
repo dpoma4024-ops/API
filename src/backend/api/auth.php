@@ -5,7 +5,7 @@
  */
 
 define('SIGMAFORO_API', true);
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/config.php';
 
 setCorsHeaders();
 

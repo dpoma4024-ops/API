@@ -42,7 +42,7 @@ define('CLOUDINARY_URL', 'https://api.cloudinary.com/v1_1/' . CLOUDINARY_CLOUD_N
 define('JWT_SECRET', 'tu_clave_secreta_super_segura_cambiala_en_produccion');
 define('JWT_EXPIRATION', 86400); // 24 horas en segundos
 
-define('UPLOAD_DIR', '../uploads/');
+define('UPLOAD_DIR', __DIR__ . '/../../../uploads/');
 define('MAX_FILE_SIZE', 5242880); // 5MB en bytes
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif']);
 
@@ -399,7 +399,7 @@ function logError($message, $context = []) {
     if (!empty($context)) {
         $log .= " - " . json_encode($context);
     }
-    error_log($log . "\n", 3, __DIR__ . '/../logs/app.log');
+    error_log($log . "\n", 3, __DIR__ . '/../../../logs/app.log');
 }
 
 /**
